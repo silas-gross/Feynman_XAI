@@ -16,6 +16,40 @@ class FeynmanGenerator:
         #datastructure for a diagram needs to be 
         #{set of vertexes, scattering amplitude, ingoing-outgoing particles, loop order}
         #this will gnerate multiple diagrams filling the same set of charracteristics, thus, hash and every incidcdnce of a hash double used, add to the symmetry factor
+        diagrams=list()
+        vs=self.vertices
+        ps=self.propagator
+        for v in vs.keys(): #this has all of the single vertex configuration diagrams
+            parts=v.split(",");
+            unique_parts=dict()
+            #need to loop over right and left hand symmetries
+            #for all unique particles, there is nCk configurations for each 
+            #config with k being the number of particles on the left hand 
+            #the general for m many unique particles is a symmetry factor of 
+            # nCk - (n-m)*min{k, (n-k)} 
+            #so each set has an in-out of 
+            #2k-n
+            for i in parts:
+                if i in unique_parts.keys():
+                    unique_parts[i]+=1
+                else:
+                    unique_parts[i]=1
+        #this has set up the number of particles at play and the number of unique particles
+        #so now need to generate diagrams with the total number of particles and switch unquies between left and right
+            n=len(parts)
+            m=len(unique_parts.keys())
+            for k in range(n):
+                if k=0:
+                    continue
+                sf=(n-m)*min(k, n-k)
+                ndiags=ncr(n,k) - sf
+                for i in range(ndiags):
+                    d=(v, "-i"+str(vs[v])+"1/"+str(sf), 2k-n, 0)
+                    diagrams.append(d)
+        #now I need to generate diagrams up to loop order l 
+        # this is calculated with L=I-V+1
+        # where I is the number of internal lines and V is number of vertices
+
         return diagrams
     def GenerateOutput(self):
         #want to output a list of diagrams with associated costs
