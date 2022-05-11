@@ -1,22 +1,25 @@
-#This file will hold the class to generate feynamn diagrams for searching 
+#This file will holdmath representation python the class to generate feynamn diagrams for searching 
 #The generation will need to be a tuple to be hashable
 #The hash then should be put in a map with a cost function to improve A* search
+from math import comb
 class FeynmanGenerator:
     def __init__(self, lagrangian, looporder=1):
-        self.order=order
+        self.order=looporder
         self.vertices=self.GetVertices(lagrangian)
         self.propagator=self.GetPropagators(lagrangian)
-        self.diagrams=self.GenerateDiagrams(lagrangian)
+        self.diagrams=self.GenerateDiagrams()
         self.scattering_amp=self.SumDiagrams()
         self.vertex_count=self.CountVertecies()
         self.diagram_output=self.GenerateOutput()
-    def GenerateDiagrams(lagrangian):
+    def GenerateDiagrams():
         #this will generate diagrams up to loop order given 
         #if loop order=-1, generate until contribution to scattering amplitude is diminneshed by a power of lambda 
         #datastructure for a diagram needs to be 
-        #{set of vertexes, scattering amplitude, ingoing-outgoing particles, loop order}
-        #this will gnerate multiple diagrams filling the same set of charracteristics, thus, hash and every incidcdnce of a hash double used, add to the symmetry factor
+        #{(string form of incoming to outgoing particles, incoming particles, outgoing particles), set of vertexes, (scattering amplitude numerical, scattering amplitude representational), ingoing-outgoing particles, loop order}
+        #this will generate multiple diagrams filling the same set of charracteristics, thus, hash and every incidcdnce of a hash double used, add to the symmetry factor
+        scattering_amplitude=0
         diagrams=list()
+        hash_diagrams=list()
         vs=self.vertices
         ps=self.propagator
         for v in vs.keys(): #this has all of the single vertex configuration diagrams
@@ -39,18 +42,118 @@ class FeynmanGenerator:
             n=len(parts)
             m=len(unique_parts.keys())
             for k in range(n):
-                if k=0:
+                if k==0 or k==n:
                     continue
                 sf=(n-m)*min(k, n-k)
-                ndiags=ncr(n,k) - sf
+                ndiags=comb(n,k) - sf
                 for i in range(ndiags):
-                    d=(v, "-i"+str(vs[v])+"1/"+str(sf), 2k-n, 0)
-                    diagrams.append(d)
+                    #need to select the particles incoming versus outgoing
+                    l=list() #gives list of particles on the left
+                    for p in range(k+1):
+                        ix=p+i
+                        ix=ix%n
+                        l.append(parts[ix])
+                    rparts=parts.copy()
+                    for p in l:
+                        rparts.remove(p)
+                    sform=''.join(str(x) for x in l)
+                    sform+="->"
+                    sform=sform.join(str(x) for x in rparts)
+                    d=((sform, l, rparts), {'1':[v, [{}]]}, (vs[v]/sf, "-i "+str(vs[v])+" 1/"+str(sf)), 2k-n, 0)
+                    if not hash(d) in hash_diagrams:
+                        diagrams.append(d)
+                        hash_diagrams.append(d)
         #now I need to generate diagrams up to loop order l 
         # this is calculated with L=I-V+1
         # where I is the number of internal lines and V is number of vertices
+        for d in diagrams:
+            if d[0] in scattering_amplitude:
+                scattering_amplitude[d[0][0]]+=d[2][0]
+            else:
+                scattering_amplitude[d[0][0]]+=d[2][0]
+        #first we need to set the current value of the scattering amplitude of each in state versus outstate
+        #now expand out each diagram from single vertexes to build a new set of diagrams
+        all_added=False
+        while all_added==False:
+            one_branch=False
+            for d in diagrams:
+                d_add=self.GenerateNextOrder(d)
+                for j in d_add:
+                    if hash(j) in hash_diagrams:
+                        d_add.remove(j)
+                        continue
+                    else:
+                        hash_diagrams.append(hash(j))
+                        one_branch=True
+                        diagrams.append(j)
+                        continue
+            if !one_branch:
+                all_added=True
+                break
+        if all_added==True:
+            return diagrams
+    def Generate_Next_order(self, diagram):
+        d_add=self.ExpandDiagram(diagram)
+        vs=self.vertices
+        for i in d_add:
+            if i[0][0] != d[0][0]:
+                d_add.remove(i)
+                second_order=self.ExpandDiagram(i) #allows to expand one extra vertex on the diagram to try to get to recombine to the desired state
+                #this acutally needs to be refined to allow for recombination and the expansion will always just branch more out
+                #can try to fix in expand diagrams
+                for j in second_order:
+                    if j[0][0] != d[0][0]:
+                        continue
+                    else:
+                        d_add.append[j]
+            else:
+                if i[-1] > self.order:
+                    d_add.remove(i)
+                    continue
+                sa=i[2][0]
+                if self.order !=0:
+                    cutoff= scattering_amplitude[i[0][0]]*pow(min(vs.values()), self.order) #limits contributions to those supressed by less than the loop order
+                    if sa <= cutoff:
+                        d_add.remove(i)
+                        continue
+                else:
+                    second_order=self.ExpandDiagram(i)
+                    ssa=0
+                    for j in second_order:
+                        ssa+=j[2][0]
+                    first_ord_correction= sa/scattering_ampiltude[i[0][0]]
+                    second_ord_correction=ssa/sa
+                    if second_ord_correction <= first_ord_correction*min(vs.values()):
+                        #this gives a text to see if the corrections are addign diminishing corrections
+                        d_add.remove(i)
+                        continue
+        return d_add
+    def ExpandDiagram(self, diagram):
+        #this will take in the diagrams and apply the relevant propagators and vertices to get to a further stage
+        vs=self.vertices
+        ps=self.propagators
+        dvs=diagram[1].copy()
+        dvsk=dvs.keys()
+        new_diagrams=list()
+        dvsd=dvs.copy()
+        for k in dvsk:
+            vp=dvsk[k] #gives vertex and which it connects to 
+            v=vp[0] #vertex
+            pc=vp[1] #dictionary of connections and propagators that lead to them
+            particles=v.split[","]
+            for part in particles:
+                if not part in pc.values():
+                    A=len(dvsk)
+                    A+=1
+                    pc[A]=part
+                    dvsd[k]=[v,pc]
+                    for vn in vs:
+                        if part in vn:
+                            dvsd[A]=[vn, {k, part}]
+                            #this has added a new vertex to the graph
 
-        return diagrams
+        #now need to get propagators corresponding to the connecting arcs
+
     def GenerateOutput(self):
         #want to output a list of diagrams with associated costs
         #do this as a dictionary on the hashed tuple
