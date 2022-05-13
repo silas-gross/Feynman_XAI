@@ -143,15 +143,37 @@ class FeynmanGenerator:
             particles=v.split[","]
             for part in particles:
                 if not part in pc.values():
+                    #this section is specifically adding a particle that does not already appear in the list of particles
+                    #will need to do the same for ones in, just broke it out here to be more clear
                     A=len(dvsk)
-                    A+=1
+                    A+=1 #this would be to add a new node
                     pc[A]=part
                     dvsd[k]=[v,pc]
+                    #This line takes the propagator in question and changes it such that it only goes to this one new propagator
                     for vn in vs:
                         if part in vn:
                             dvsd[A]=[vn, {k, part}]
-                            #this has added a new vertex to the graph
+                            passed_val=False
+                            i=0
+                            for oparts in vn:
 
+                                if oparts==parts and not passed_val:
+                                    passed_val=True
+                                    continue
+                                else:
+                                    out_node="exterior_"+str(A)+"_"+str(i)
+                                    i+=1
+                                    dvsd[out_node]=[{}, {k, opart}]
+                                    #not quite sure about the k here but this is the general idea
+                                
+                        
+                            #this has added a new vertex to the graph
+                            #this vertex is an exterior vertex
+                else:
+                    #need to allow for recombination on exterior lines
+                    #for this I need very specific notation to exterior nodes
+                    #have to add another type of key to my datastructure
+        #recombine after expansion is done
         #now need to get propagators corresponding to the connecting arcs
 
     def GenerateOutput(self):
