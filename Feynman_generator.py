@@ -59,7 +59,11 @@ class FeynmanGenerator:
                     sform=''.join(str(x) for x in l)
                     sform+="->"
                     sform=sform.join(str(x) for x in rparts)
-                    d=((sform, l, rparts), {'1':[v, [{}]]}, (vs[v]/sf, "-i "+str(vs[v])+" 1/"+str(sf)), 2k-n, 0)
+                    out=dict() #this is the dictionary of the connections to the exterior
+                    for j in range(len(parts)):
+                        out_node="exterior_"+str(j)
+                        out[out_node]=parts[j]
+                    d=((sform, l, rparts), {'1':[v, out]}, (vs[v]/sf, "-i "+str(vs[v])+" 1/"+str(sf)), 2k-n, 0)
                     if not hash(d) in hash_diagrams:
                         diagrams.append(d)
                         hash_diagrams.append(d)
@@ -151,6 +155,7 @@ class FeynmanGenerator:
                     dvsd[k]=[v,pc]
                     #This line takes the propagator in question and changes it such that it only goes to this one new propagator
                     for vn in vs:
+                        #This is not quite right and I need to fix this I shoudl write down what exactly this is hoping to do and then reqriote this part
                         if part in vn:
                             dvsd[A]=[vn, {k, part}]
                             passed_val=False
