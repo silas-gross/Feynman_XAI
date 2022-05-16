@@ -2,6 +2,7 @@
 #The generation will need to be a tuple to be hashable
 #The hash then should be put in a map with a cost function to improve A* search
 from math import comb
+from scipy import integrate
 class FeynmanGenerator:
     def __init__(self, lagrangian, looporder=1):
         self.order=looporder
@@ -132,54 +133,14 @@ class FeynmanGenerator:
                         d_add.remove(i)
                         continue
         return d_add
-    def ExpandDiagram(self, diagram):
-        #this will take in the diagrams and apply the relevant propagators and vertices to get to a further stage
+    def ExpandDiagram(self, diagram, leg):
+        #this will take in a diagram and expand the vertex along a specific propagator
+        #redoing the heuristic so that it just accounts for the mass on the propagator as a proxy for a scaling on the SA
+        #so it will be average of coupling constant over the vertexes including the propagator /m^2
+        #that is a good proxy to the scattering amplitude with out calcuating
+        #so this is what the "expand children" will be 
         vs=self.vertices
         ps=self.propagators
-        dvs=diagram[1].copy()
-        dvsk=dvs.keys()
-        new_diagrams=list()
-        dvsd=dvs.copy()
-        for k in dvsk:
-            vp=dvsk[k] #gives vertex and which it connects to 
-            v=vp[0] #vertex
-            pc=vp[1] #dictionary of connections and propagators that lead to them
-            particles=v.split[","]
-            for part in particles:
-                if not part in pc.values():
-                    #this section is specifically adding a particle that does not already appear in the list of particles
-                    #will need to do the same for ones in, just broke it out here to be more clear
-                    A=len(dvsk)
-                    A+=1 #this would be to add a new node
-                    pc[A]=part
-                    dvsd[k]=[v,pc]
-                    #This line takes the propagator in question and changes it such that it only goes to this one new propagator
-                    for vn in vs:
-                        #This is not quite right and I need to fix this I shoudl write down what exactly this is hoping to do and then reqriote this part
-                        if part in vn:
-                            dvsd[A]=[vn, {k, part}]
-                            passed_val=False
-                            i=0
-                            for oparts in vn:
-
-                                if oparts==parts and not passed_val:
-                                    passed_val=True
-                                    continue
-                                else:
-                                    out_node="exterior_"+str(A)+"_"+str(i)
-                                    i+=1
-                                    dvsd[out_node]=[{}, {k, opart}]
-                                    #not quite sure about the k here but this is the general idea
-                                
-                        
-                            #this has added a new vertex to the graph
-                            #this vertex is an exterior vertex
-                else:
-                    #need to allow for recombination on exterior lines
-                    #for this I need very specific notation to exterior nodes
-                    #have to add another type of key to my datastructure
-        #recombine after expansion is done
-        #now need to get propagators corresponding to the connecting arcs
 
     def GenerateOutput(self):
         #want to output a list of diagrams with associated costs
@@ -224,14 +185,39 @@ class FeynmanGenerator:
         return ps
     def CalculateScatteringAmplitude(self, diagram):
         #this method takes in a digram in the form of 
-        #{ordered set of vertecies,connecting propagators, exterior label contirbutions}
         #each set will be a vertex and the propagators flowwing out
-        sa=diagram[1]
-        for vc in diagram[0]:
-            #each element of diagram 
-            sa+=self.verticies(vc[0])
-            for p in vc[1]:
-                sa+=self.propagators(p)
         return sa
+    def heuristic(self, diagram, propagator):
+        #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 
+        #this last part is a normalized proxy for the loop order
+        #all this is saying is really just contributions to scattering amplitude and order of divergence
+        avg_constant=0
+        total_vertexs=0
+        vertexs=self.vertices.copy()
+        in_out=len(diagram[0][1])+len(diagram[0][2]) #this is base level
+        n_lines=sum(len(diagram[1][x])) for x in diagram[1].keys
+        #not sure if I structured this correctly need to check
+        in_out_new_contribution=0
+        for vk in vertexs.keys():
+            if propagator in vk:
+                avg_constant+=vertexs[vk]
+                total_vertexs+=1
+                in_out_new_contribution+=len(vk.split(","))-1
+        if total_vertexs !=0:
+            avg_constant=float(avg_constant)/total_vertexs
+            in_out_new_contribution=in_out_new_contribution/total_vertexs
+        SA=diagram[2][0] #current scattering amplitude
+        m=self.propagators[p][0] #mass of the propagator
+        starting_coupling_constant=self.CountVertices(diagram)[1]
+        #so I need count vertices to return a list of the form 
+        #(count of vertexs, product of coupling constants, list of vertexs)
+        h=1/SA*(starting_coupling_constant*avg_constant)/pow(m,2)
+        n_lines+=in_out_new_contribution
+        in_out+=in_out_new_contribution
+        h+= 1-in_out/n_lines
+        return h
+        
+
+             
         
         
