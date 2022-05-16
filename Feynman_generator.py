@@ -195,8 +195,7 @@ class FeynmanGenerator:
         total_vertexs=0
         vertexs=self.vertices.copy()
         in_out=len(diagram[0][1])+len(diagram[0][2]) #this is base level
-        n_lines=sum(len(diagram[1][x])) for x in diagram[1].keys
-        #not sure if I structured this correctly need to check
+        n_lines=sum([len(diagram[1][x]) for x in diagram[1].keys])
         in_out_new_contribution=0
         for vk in vertexs.keys():
             if propagator in vk:
