@@ -65,9 +65,9 @@ class FeynmanGenerator:
                     sform=sform.join(str(x) for x in rparts)
                     out=dict() #this is the dictionary of the connections to the exterior
                     for j in range(len(parts)):
-                        out_node="exterior_"+str(j)
+                        out_node="out_"+str(j)
                         out[out_node]=parts[j]
-                    #d=tuple((sform, l, rparts), {'1':[v, out]}, (vs[v]/sf, "-i "+str(vs[v])+" 1/"+str(sf)), 2k-n, 0)
+                    d=tuple((sform, l, rparts), {'1':[v, out]}, vs[v]/sf, 2k-n, 0)
                     #I need to go through all of this and sort out what I need the diagram to have and where
                     if not hash(d) in hash_diagrams:
                         diagrams.append(d)
@@ -101,42 +101,8 @@ class FeynmanGenerator:
                 break
         if all_added==True:
             return diagrams
-    def Generate_Next_order(self, diagram):
-        d_add=self.ExpandDiagram(diagram)
-        vs=self.vertices
-        for i in d_add:
-            if i[0][0] != d[0][0]:
-                d_add.remove(i)
-                second_order=self.ExpandDiagram(i) #allows to expand one extra vertex on the diagram to try to get to recombine to the desired state
-                #this acutally needs to be refined to allow for recombination and the expansion will always just branch more out
-                #can try to fix in expand diagrams
-                for j in second_order:
-                    if j[0][0] != d[0][0]:
-                        continue
-                    else:
-                        d_add.append[j]
-            else:
-                if i[-1] > self.order:
-                    d_add.remove(i)
-                    continue
-                sa=i[2][0]
-                if self.order !=0:
-                    cutoff= scattering_amplitude[i[0][0]]*pow(min(vs.values()), self.order) #limits contributions to those supressed by less than the loop order
-                    if sa <= cutoff:
-                        d_add.remove(i)
-                        continue
-                else:
-                    second_order=self.ExpandDiagram(i)
-                    ssa=0
-                    for j in second_order:
-                        ssa+=j[2][0]
-                    first_ord_correction= sa/scattering_ampiltude[i[0][0]]
-                    second_ord_correction=ssa/sa
-                    if second_ord_correction <= first_ord_correction*min(vs.values()):
-                        #this gives a text to see if the corrections are addign diminishing corrections
-                        d_add.remove(i)
-                        continue
-        return d_add
+    def GenerateNextOrder(self, diagram):
+        #need to figure out if I actually want to use this, if so, need to update to match with current Expand
     def ExpandDiagram(self, diagram, leg, from_node, to_node):
         #this will take in a diagram and expand the vertex along a specific propagator
         #redoing the heuristic so that it just accounts for the mass on the propagator as a proxy for a scaling on the SA
@@ -246,8 +212,11 @@ class FeynmanGenerator:
         return sum_of_amplitudes
     def CountVertices(self, diag):
         #ok I need to write this again
-        
-        return vertexs
+        vertexes=0
+        for k in diag.keys():
+            if not "out" in k:
+                vertexes+=1
+        return vertexes
     def GetVertices(self, lagrangian):
         #read in the interaction parts of the lagrangian and give a dictionary of vertecies with correponding coupling constants
         #maybe hash down the road to compare models?--This is a far off goal
@@ -424,21 +393,24 @@ class FeynmanGenerator:
                     free_params=list()
                     for k in p_parts:
                         if "free" in k:
-                            fp=k.replace("free", '')
-                            free_params.append(int(fp))
+                            free_params.append(k)
                     add_param=int(p_parts[-1])
-                    integrand.append([free_params, add_param])
+                    integrand.append([free_params, add_param, ps[momementum[m][0]]])
                 else:
                     fp=p.replace("free", '')
-                    integrand.append([[fp],0])
+                    integrand.append([[fp],0, ps[momentum[m][0]])
             else:
                 part=momentum[m][0]
                 external_contribution=external_contribution*(-1)/pow(ps[part], 2)
         return [integrand, external_contribution]
-    def Integrand(x,add_to_x, m):
-        xs=sum(x)
-        return -1*/(pow(xs+add_to_x,2) +pow(m,2))
-
+    def Integrand(self, xs, x_add, m):
+        x=sum(xs)
+        return -1*/(pow(x +x_add,2) +pow(m,2))
+    def IntegrandProduct(self, integrands):
+        I=1
+        for i in integrands:
+            I=I*self.Integrand(i[0], i[1], i[2])
+        return I
     def CalculateScatteringAmplitude(self, diagram, cutoff):
         #this method takes in a diagram in the graph form 
         #then it passes that diagram off to a CSP approach to fix the non-free parameters
@@ -446,9 +418,12 @@ class FeynmanGenerator:
         pi=3.14159
         integrands, external_contribution=self.ImposeZeroExternalMomentum(diagram)
         sa=external_contrbution
+        loop=self.CalculateLoopOrder(diagram)
         #now I need to digest the integrands as they are non-trivial
         #have loop_order many variables to integrate over
-            
+        bounds=[[0, cutoff]]*loop
+        #this has given n many copies of the bound
+        sa=sa*integrate.nquad(self.IntegrandProduct, bounds, args=(*integrands))    
         return sa
     def heuristic(self, diagram, propagator):
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 
