@@ -4,6 +4,7 @@
 from math import comb
 from copy import deepcopy
 from scipy import integrate
+from random import choice
 class FeynmanGenerator:
     def __init__(self, lagrangian, looporder=1):
         self.order=looporder
@@ -66,7 +67,8 @@ class FeynmanGenerator:
                     for j in range(len(parts)):
                         out_node="exterior_"+str(j)
                         out[out_node]=parts[j]
-                    d=tuple((sform, l, rparts), {'1':[v, out]}, (vs[v]/sf, "-i "+str(vs[v])+" 1/"+str(sf)), 2k-n, 0)
+                    #d=tuple((sform, l, rparts), {'1':[v, out]}, (vs[v]/sf, "-i "+str(vs[v])+" 1/"+str(sf)), 2k-n, 0)
+                    #I need to go through all of this and sort out what I need the diagram to have and where
                     if not hash(d) in hash_diagrams:
                         diagrams.append(d)
                         hash_diagrams.append(d)
@@ -264,13 +266,189 @@ class FeynmanGenerator:
             #the particle has a mass m, which is the associated propagator
             #this approach will only work for scalars, so further 
         return ps
-    def CalculateScatteringAmplitude(self, props_and_vertexs, cutoff):
-        #this method takes in a digram in the form of 
-        #each set will be a vertex and the propagators flowwing out
-        sa=0
+    def CheckIfVertexValid(self, momenta):
+        all_good=False
+        weights=[1 for m in momenta]
+        s=sum(momenta)
+        if s==0:
+            all_good=True
+        while all_good=False
+            for i in range(len(weights)):
+                if momenta[i]==0:
+                    continue
+                else:
+                    weights[i]=-1*weights[i]
+                    s=sum([weights[j]*momenta[j] for j in range(len(momenta))])
+                    if s==0:
+                        all_good=True
+                        break
+        #this try combinations of inflow or outflow to a vertex
+        return all_good
+
+    def AssignValues(self, momenta,verts, frees):
+        #this assigns values to the non-free momenta
+        max_val=len(momenta)-len(frees)
+        vals=[0:max_val]
+        m=list(momenta.keys())
+        mvs=dict()
+        for i in range(len(m)):
+            if i in frees:
+                fv="free"+str(i)
+                momenta[m[i]][1]=fv
+                #this has set the free variables
+        for v in verts:
+            for vl in v
+                if momenta[vl][1]==-1:
+                    f_in_v=""
+                    needs_random=False
+                    for vo in v:
+                        if vo==vl:
+                            continue
+                        else:
+                            if "free" in momenta[vo][1]:
+                                f_in_v+=momenta[vo][1]
+                            elif momenta[vo][1]==-1 :
+                                needs_random=True
+                            elif momenta[vo][1]==0:
+                                continue
+                            else
+                                f_in_v+=str(momenta[vo][1])
+                    if needs_random:
+                        val_to_give=choice(vals)
+                        f_in_v+=str(val_to_give)
+                    momenta[vl][1]=f_in_v
+            return momenta
+    def CalculateLoopOrder(self, diagram):
+        #takes in a diagram in graph form and outputs the loop order
+        l=0
+        i=0 
+        v=0
+        for k in diagram.keys():
+            if not "out" in k:
+                v+=1
+                for c in diagram[k][1].keys():
+                    if not "out" in c:
+                        i+=1
+        i=i/2
+        l=i-v+1
+        return l
+    def ImposeZeroExternalMomentum(self, diagram):
+        #this is the entry point of the CSP to get free parameters to integrate over and external contrivutions
+        #this enforces the delta functions that show up at every vertex
+        momentum=dict()
+        vertices_momenta=list()
+        ps=self.propagators
+        cc=self.vertices
+        all_vertices_are_correct=False
+        loop_order=self.CalculateLoopOrder(diagram)
+        external_cotnribution=1
+        verts=list()
+        for k in diagram.keys():
+            if "out" in k:
+                particle=list(diagram[k][1].values())[0]
+                connector=list(diagram[k][1].keys())[0]
+                kc=str(k)+":"+str(connector)
+                momentum[kc]=[particle, 0]
+            #all exterior particles have momentum 0
+            #loop order gives the number of free parameters
+            #free parameters are given by momentum[n]=[particle, "free"]
+            #when checking a vertex with a free parameter, assign "free"=0
+            else:
+                vert=list()
+                external_contribution=external_contribution*-1*cc[k][0]
+                for nc in diagram[k]:
+                    nkc=str(k)+":"+str(nc)
+                    vert.append(nkc)
+                    if nkc.split(":") in momentum.keys().split(":"):
+                        continue
+                    else:
+                        particle=diagram[k][1][nc]
+                        momentum[nkc]=[particle, "free"]
+            #Now we have fully setup the dictionary of momenta associated with all lines
+            #now we should test assigning values to all but looporder many free partices
+                verts.append(vert)
+            frees=list()
+            f=len(momentum) % loop_order
+            for i in range(len(loop_order)):
+                k=list(momentum.keys())
+                if momentum[k[i]][1]==0:
+                    i+=1
+                frees.append(i)
+
+            dmomentum=self.AssignValues(momentum,verts,frees)
+            itt=0
+            var=-1
+        while all_vertices_are_correct==False:
+            for k in diagrams.keys():
+                for nc in diagrams[k].keys():
+                    vertex=list()
+                    for m in dmomentum.keys()
+                        if nc in m and k in m:
+                            vm=dmomentum[m][1]
+                            if "free" in vm and not "+" in vm:
+                                vm=0
+                            elif "free+" in vm:
+                                vm.replace("free+", '')
+                                vm=int(vm)
+                            vertex.append(vm)
+                        else:
+                            continue
+                vertices_momenta.append(vertex)
+            corrects=list()
+            for v in vertices_momenta:
+                corrects.append(self.CheckIfVertexValid(v))
+            if not all(corrects):
+                frees[var]+=itt
+                itt+=1
+                while itt in frees:
+                    itt+=1
+                if itt==len(dmomentum):
+                    itt=0
+                    var+=-1
+                k=list(dmomentum.keys())
+                while dmomentum[k[itt]][1]==0:
+                    itt+=1
+                dmomentum=self.AssignValues(momentum, verts, frees)
+            else:
+                momentum=dmomentum
+                all_vertices_are_correct=True
+                break
+        integrand=list()
+        for m in momentum.keys():
+            if "out" in m:
+                continue
+            p=momentum[m][1]
+            if "free" in p:
+                if "+" in p:
+                    p_parts=p.split("+")
+                    free_params=list()
+                    for k in p_parts:
+                        if "free" in k:
+                            fp=k.replace("free", '')
+                            free_params.append(int(fp))
+                    add_param=int(p_parts[-1])
+                    integrand.append([free_params, add_param])
+                else:
+                    fp=p.replace("free", '')
+                    integrand.append([[fp],0])
+            else:
+                part=momentum[m][0]
+                external_contribution=external_contribution*(-1)/pow(ps[part], 2)
+        return [integrand, external_contribution]
+    def Integrand(x,add_to_x, m):
+        xs=sum(x)
+        return -1*/(pow(xs+add_to_x,2) +pow(m,2))
+
+    def CalculateScatteringAmplitude(self, diagram, cutoff):
+        #this method takes in a diagram in the graph form 
+        #then it passes that diagram off to a CSP approach to fix the non-free parameters
+        sa=1
         pi=3.14159
-        for p in props_and_vertexs:
-            sa+=integrate.quad(p[1]/pow(pow(x, 2) + pow(p[0],2), 2), 0, cutoff)
+        integrands, external_contribution=self.ImposeZeroExternalMomentum(diagram)
+        sa=external_contrbution
+        #now I need to digest the integrands as they are non-trivial
+        #have loop_order many variables to integrate over
+            
         return sa
     def heuristic(self, diagram, propagator):
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 
