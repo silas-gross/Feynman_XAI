@@ -250,15 +250,27 @@ class FeynmanGenerator:
         #read in the interaction parts of the lagrangian and give a dictionary of vertecies with correponding coupling constants
         #maybe hash down the road to compare models?--This is a far off goal
         vs=dict()
+        cc=lagrangian["coupling_constants"]
+        for c in cc.keys():
+            vs[c]=cc[c]
+            #again this is really just reading off a value
         return vs
     def GetPropagators(self, lagrangian)
         #calculate the propagator for each particle that we need to account for
         #return dictionary 
         ps=dict()
+        for p in lagrangian["particles"]:
+            ps[p]=lagrangian["particles"][p] #the lagrangian data structure should be a dictionary of dictionaries
+            #the particle has a mass m, which is the associated propagator
+            #this approach will only work for scalars, so further 
         return ps
-    def CalculateScatteringAmplitude(self, diagram):
+    def CalculateScatteringAmplitude(self, props_and_vertexs, cutoff):
         #this method takes in a digram in the form of 
         #each set will be a vertex and the propagators flowwing out
+        sa=0
+        pi=3.14159
+        for p in props_and_vertexs:
+            sa+=integrate.quad(p[1]/pow(pow(x, 2) + pow(p[0],2), 2), 0, cutoff)
         return sa
     def heuristic(self, diagram, propagator):
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 
