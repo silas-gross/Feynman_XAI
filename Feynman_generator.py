@@ -2,6 +2,7 @@
 #The generation will need to be a tuple to be hashable
 #The hash then should be put in a map with a cost function to improve A* search
 from math import comb
+from copy import deepcopy
 from scipy import integrate
 class FeynmanGenerator:
     def __init__(self, lagrangian, looporder=1):
@@ -12,6 +13,7 @@ class FeynmanGenerator:
         self.scattering_amp=self.SumDiagrams()
         self.vertex_count=self.CountVertecies()
         self.diagram_output=self.GenerateOutput()
+        self.diagram_list=list() #list of the hashs of diagrams
     def GenerateDiagrams():
         #this will generate diagrams up to loop order given 
         #if loop order=-1, generate until contribution to scattering amplitude is diminneshed by a power of lambda 
@@ -20,7 +22,7 @@ class FeynmanGenerator:
         #this will generate multiple diagrams filling the same set of charracteristics, thus, hash and every incidcdnce of a hash double used, add to the symmetry factor
         scattering_amplitude=0
         diagrams=list()
-        hash_diagrams=list()
+        hash_diagrams=self.diagram_list()
         vs=self.vertices
         ps=self.propagator
         for v in vs.keys(): #this has all of the single vertex configuration diagrams
@@ -64,7 +66,7 @@ class FeynmanGenerator:
                     for j in range(len(parts)):
                         out_node="exterior_"+str(j)
                         out[out_node]=parts[j]
-                    d=((sform, l, rparts), {'1':[v, out]}, (vs[v]/sf, "-i "+str(vs[v])+" 1/"+str(sf)), 2k-n, 0)
+                    d=tuple((sform, l, rparts), {'1':[v, out]}, (vs[v]/sf, "-i "+str(vs[v])+" 1/"+str(sf)), 2k-n, 0)
                     if not hash(d) in hash_diagrams:
                         diagrams.append(d)
                         hash_diagrams.append(d)
@@ -133,7 +135,7 @@ class FeynmanGenerator:
                         d_add.remove(i)
                         continue
         return d_add
-    def ExpandDiagram(self, diagram, leg):
+    def ExpandDiagram(self, diagram, leg, from_node, to_node):
         #this will take in a diagram and expand the vertex along a specific propagator
         #redoing the heuristic so that it just accounts for the mass on the propagator as a proxy for a scaling on the SA
         #so it will be average of coupling constant over the vertexes including the propagator /m^2
@@ -141,41 +143,112 @@ class FeynmanGenerator:
         #so this is what the "expand children" will be 
         vs=self.vertices
         ps=self.propagators
+        #just take in the graph form of the diagram
+        out_diagrams=list()
+        diagrams_hash=self.diagram_list
+        n_out=0
+        for node in diagram.keys():
+            if "out" in node:
+                n_out+=1
+        for v in vs:
+            particles_in_vertex=v.split(",")
+            if leg in particles_in_vertex:
+                diagram_to_expand=deepcopy(diagram)
+                conections=diagram_to_expand[from_node]
+                del connections[to_node]
+                new_node=len(diagram_to_expand.keys())+1
+                connections[new_node]=leg
+                diagram_to_expand[from_node]=connections
+                diagram_to_expand[new_node]={to_node:leg, from_node:leg}
+                del diagram_to_expand[to_node][from_node]
+                diagram_to_expand[to_node][new_node]=leg
+                original_particle=0
+                out_n=0
+                for r in particles_in_vertex:
+                    if original_particle<2 and r==leg:
+                        original_particle+=1
+                        continue
+                    else:
+                        out_n+=1
+                        node_name="out_"+str(out_n+n_out)
+                        diagram_to_expand[new_node][node_name]=r
+                        diagram_to_expand[node_name]={new_node: r}
+                d=tuple(diagrams_to_expand)
+                if hash(d) in diagrams_hash:
+                    continue
+                else:
+                    out_diagrams.append(diagrams_to_expand)
+                    diagrams_hash.append(d)
+                #so now I've added all the diagrams 
+                #now need to put in recombinations
+            
+                to_recombine=True
+                dl=diagrams_to_expand
+                while to_recombine:
+                    dl=[ self.RecombineExteriors(dx) for dx in dl]
+                    dl=[x for y in dl for x in y]
+                    if len(dl)==0:
+                        to_recombine=False
+                        break
+                    else:
+                        for dd in dl:
+                            d=tuple(dd)
+                            if hash(d) in diagrams_hash:
+                                continue
+                            else:
+                                out_diagrams.append(dd)
+                                diagrams_hash.append(d)
+                return out_diagrams
+
+
+
+
+    def RecombineExteriors(self, diagram):
+        #recombines exterior propagators
+        k=[x for x in diagram.keys() if "out" in x]
+        found_recomb=False
+        diagrams_out=list()
+        dummy_diagram=deepcopy(diagram)
+        d_hash=list()
+        for i in range(len(k)):
+            for j in range(len(k)):
+                if i==j: 
+                    continue
+                else:
+                    if  list(dummy_diagram[k[i]].values())[0]==list(dummy_diagram[k[j]].values())[0]:
+                        found_recomb=True
+                        c=list(dummy_diagram[k[j]].keys())[0]
+                        b=list(dummy_diagram[k[i]].keys())[0]
+                        p=list(dummy_diagram[k[i]].values())[0]
+                        dummy_diagram[b][c]=p
+                        dummy_diagram[c][b]=p
+                        del dummy_diagram[k[j]]
+                        del dummy_diagram[k[i]]
+                        
+                        d=tuple(dummy_diagram)
+                        if hash(d) in d_hash:
+                            continue
+                        else:
+                            diagrams_out.append(dummy_diagram)
+                            d_hash.append(d)
+        return diagrams_out
+
 
     def GenerateOutput(self):
-        #want to output a list of diagrams with associated costs
-        #do this as a dictionary on the hashed tuple
-        do=dict()
-        a=self.scattering_amp
-        o=self.order
-        if o== -1:
-            o=1
-        for d in self.diagrams:
-            hv=hash(d)
-            c=(1-d[1]/a)+ d[2] + 1/o*(len(d[0])+d[3]) #this is a normalized-ish cost function
-            do[hv]=c
-        return do
-    def SumDiagrams(self):
+        #need to figure out what this should be
+    def SumDiagrams(self, diagrams):
         #This will sum up all the present diagrams in the list of diagrams
-        diag=self.diagrams
         sum_of_amplitudes=0
-        for l in diag:
+        for l in diagrams:
             sum_of_amplitudes+=l[1]
         return sum_of_amplitudes
-    def CountVertices(self):
-        diag=self.diagrams
-        vertexs=dict()
-        for d in diag:
-            vl=d[1]
-            for v in vl:
-                if v in vertexs:
-                    vertexs[v]+=1
-                else:
-                    vertexs[v]=1
+    def CountVertices(self, diag):
+        #ok I need to write this again
+        
         return vertexs
     def GetVertices(self, lagrangian):
         #read in the interaction parts of the lagrangian and give a dictionary of vertecies with correponding coupling constants
-        #maybe hash down the road to compare models?
+        #maybe hash down the road to compare models?--This is a far off goal
         vs=dict()
         return vs
     def GetPropagators(self, lagrangian)
