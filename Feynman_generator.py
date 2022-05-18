@@ -9,16 +9,15 @@ class FeynmanGenerator:
     def __init__(self, lagrangian, cutoff, looporder=1):
         self.order=looporder
         self.cutoff=cutoff
+        self.diagram_list=[]
         self.vertices=self.GetVertices(lagrangian)
-        self.propagator=self.GetPropagators(lagrangian)
+        self.propagators=self.GetPropagators(lagrangian)
         self.diagrams=self.GenerateDiagrams()
-        self.vertex_count=self.CountVertecies()
-        self.diagram_output=self.GenerateOutput()
-        self.diagram_list=list() #list of the hashs of diagrams
+#        self.diagram_list=list() #list of the hashs of diagrams
     def UpdateCutoffandVertex(self, new_cutoff, newccs):
         self.cutoff=new_cutoff
         self.vertices=newccs
-    def GenerateDiagrams():
+    def GenerateDiagrams(self):
         #this will generate diagrams up to loop order given 
         #if loop order=-1, generate until contribution to scattering amplitude is diminneshed by a power of lambda 
         #datastructure for a diagram needs to be 
@@ -26,11 +25,11 @@ class FeynmanGenerator:
         #this will generate multiple diagrams filling the same set of charracteristics, thus, hash and every incidcdnce of a hash double used, add to the symmetry factor
         scattering_amplitude=0
         diagrams=list()
-        hash_diagrams=self.diagram_list()
+        hash_diagrams=self.diagram_list
         vs=self.vertices
-        ps=self.propagator
+        ps=self.propagators
         for v in vs.keys(): #this has all of the single vertex configuration diagrams
-            parts=v.split(",");
+            parts=v.split(", ");
             unique_parts=dict()
             #need to loop over right and left hand symmetries
             #for all unique particles, there is nCk configurations for each 
@@ -52,6 +51,8 @@ class FeynmanGenerator:
                 if k==0 or k==n:
                     continue
                 sf=(n-m)*min(k, n-k)
+                if sf==0:
+                    sf=1
                 ndiags=comb(n,k) - sf
                 for i in range(ndiags):
                     #need to select the particles incoming versus outgoing
@@ -67,52 +68,54 @@ class FeynmanGenerator:
                     sform+="->"
                     sform=sform.join(str(x) for x in rparts)
                     out=dict() #this is the dictionary of the connections to the exterior
-                    outcons=dict()
+                    out_cons=dict()
                     for j in range(len(parts)):
                         out_node="out_"+str(j)
                         out[out_node]=parts[j]
                         out_cons[out_node]=[0, {'1':parts[j]}]
                     out_cons['1']=[v, out]
                     r=2*k-n
-                    d=tuple([sform, l, rparts], out_cons, vs[v]/sf,r , 0)
+                    d=[[sform, l, rparts], out_cons, vs[v]/sf,r , 0]
                     #I need to go through all of this and sort out what I need the diagram to have and where
-                    if not hash(d) in hash_diagrams:
+                    if not hash(str([*d])) in hash_diagrams:
                         diagrams.append(d)
-                        hash_diagrams.append(d)
+                        hash_diagrams.append(hash(str([*d])))
         #now I need to generate diagrams up to loop order l 
         # this is calculated with L=I-V+1
         # where I is the number of internal lines and V is number of vertices
-        for d in diagrams:
-            if d[0] in scattering_amplitude:
-                scattering_amplitude[d[0][0]]+=d[2][0]
-            else:
-                scattering_amplitude[d[0][0]]+=d[2][0]
         #first we need to set the current value of the scattering amplitude of each in state versus outstate
         #now expand out each diagram from single vertexes to build a new set of diagrams
-        all_added=False
-        while all_added==False:
-            one_branch=False
-            for d in diagrams:
-                d_add=self.GenerateNextOrder(d)
-                for j in d_add:
-                    if hash(j) in hash_diagrams:
-                        d_add.remove(j)
-                        continue
-                    else:
-                        hash_diagrams.append(hash(j))
-                        one_branch=True
-                        diagrams.append(j)
-                        continue
-            if not one_branch:
-                all_added=True
-                break
-        if all_added==True:
-            return diagrams
-    def GenerateNextOrder(self, diagram):
+       # all_added=False
+        #while all_added==False:
+         #   one_branch=False
+         #   for d in diagrams:
+          #      print(d[1])
+          #      d_add=self.GenerateNextOrder(d)
+          #      for j in d_add:
+          #          if hash(str([*j])) in hash_diagrams:
+          #              d_add.remove(j)
+          #              continue
+          #          else:
+          #              hash_diagrams.append(hash(str([*j])))
+          #              one_branch=True
+          #              diagrams.append(j)
+          #              continue
+          #  if not one_branch:
+          #      all_added=True
+          #      break
+        #if all_added==True:
+        return diagrams
+    def GenerateNextOrder(self, diagram_a):
         #need to figure out if I actually want to use this, if so, need to update to match with current Expand
         #what this is doing is actulalay generating the queue
         legs=list()
         children=list()
+        if type(diagram_a) is list:
+            diagram=diagram_a[1]
+        elif type(diagram_a) is dict:
+            diagram=diagram_a
+        else:
+            print(type(diagram_a))
         for n in diagram.keys():
             for m in diagram[n][1].keys():
                 leg=str(n)+":"+str(m)
@@ -121,7 +124,7 @@ class FeynmanGenerator:
                 if not found:
                     legs.append(leg)
                     prop_and_nodes=[diagram[n][1][m], n, m]
-                    children.append(self.GenerateOutput(diagram, prop_and_nodes))
+                    children.append(self.GenerateOutput(diagram_a, prop_and_nodes))
         return children
 
     def Same(self, particle_list_1, particle_list_2):
@@ -145,17 +148,17 @@ class FeynmanGenerator:
         diagrams_hash=self.diagram_list
         n_out=0
         for node in diagram.keys():
-            if "out" in node:
+            if "out" in str(node):
                 n_out+=1
                 external_particles.append(list(diagram[node][1].values())[0])
         if second==True:
             external_particles=old_ext
         for v in vs:
-            particles_in_vertex=v.split(",")
+            particles_in_vertex=v.split(", ")
             if leg in particles_in_vertex:
                 new_external=list()
                 diagram_to_expand=deepcopy(diagram)
-                conections=diagram_to_expand[from_node][1]
+                connections=diagram_to_expand[from_node][1]
                 del connections[to_node]
                 new_node=len(diagram_to_expand.keys())+1
                 connections[new_node]=leg
@@ -175,19 +178,19 @@ class FeynmanGenerator:
                         diagram_to_expand[new_node][1][node_name]=r
                         diagram_to_expand[node_name]=[0,{new_node: r}]
                         new_external.append(r)
-                d=tuple(diagrams_to_expand)
+                d=str(diagram_to_expand)
                 if not self.Same(new_external, external_particles):
                     if second==False:
-                        for m in diagrams_to_expand.keys():
-                            for n in diagrams_to_expand[m][1].keys():
-                                ds=self.ExpandDiagram(diagrams_to_expand, diagrams_to_expand[m][1][n], m, n, True, external_particles)
+                        for m in diagram_to_expand.keys():
+                            for n in diagram_to_expand[m][1].keys():
+                                ds=self.ExpandDiagram(diagram_to_expand, diagram_to_expand[m][1][n], m, n, True, external_particles)
                                 for dss in ds:
                                     nep=list()
                                     for node in dss.keys():
-                                        if "out" in node:
+                                        if "out" in str(node):
                                             nep.append(list(dss[node][1].values())[0])
                                     if self.Same(nep,external_particles):
-                                        tdss=tuple(dss)
+                                        tdss=str([*dss])
                                         if hash(tdss) in diagrams_hash:
                                             continue
                                         else:
@@ -200,25 +203,25 @@ class FeynmanGenerator:
                     continue
                 else:
 
-                    out_diagrams.append(diagrams_to_expand)
+                    out_diagrams.append(diagram_to_expand)
                     diagrams_hash.append(d)
                 #so now I've added all the diagrams 
                 #now need to put in recombinations
             
                 to_recombine=True
-                dl=diagrams_to_expand
+                dl=[diagram_to_expand]
                 while to_recombine:
-                    dl=[ self.RecombineExteriors(dx) for dx in dl]
+                    dl=[self.RecombineExteriors(dx) for dx in dl]
                     dl=[x for y in dl for x in y]
                     if len(dl)==0:
                         to_recombine=False
                         break
                     else:
                         for dd in dl:
-                            d=tuple(dd)
+                            d=str(dd)
                             new_external=list()
                             for node in dd:
-                                if "out" in node:
+                                if "out" in str(node):
                                     new_external.append(list(dd[node][1].values())[0])
                             if not self.Same(new_external, external_particles):
                                 continue
@@ -232,7 +235,10 @@ class FeynmanGenerator:
 
     def RecombineExteriors(self, diagram):
         #recombines exterior propagators
-        k=[x for x in diagram.keys() if "out" in x]
+        k=[]
+        for x in diagram.keys():
+            if "out" in str(x):
+                k.append(x)
         found_recomb=False
         diagrams_out=list()
         dummy_diagram=deepcopy(diagram)
@@ -242,17 +248,19 @@ class FeynmanGenerator:
                 if i==j: 
                     continue
                 else:
-                    if  list(dummy_diagram[k[i]].values())[0]==list(dummy_diagram[k[j]].values())[0]:
+                    if not k[i] in dummy_diagram.keys() or not k[j] in dummy_diagram.keys():
+                        continue
+                    if  list(dummy_diagram[k[i]][1].values())[0]==list(dummy_diagram[k[j]][1].values())[0]:
                         found_recomb=True
-                        c=list(dummy_diagram[k[j]].keys())[0]
-                        b=list(dummy_diagram[k[i]].keys())[0]
-                        p=list(dummy_diagram[k[i]].values())[0]
-                        dummy_diagram[b][c]=p
-                        dummy_diagram[c][b]=p
+                        c=list(dummy_diagram[k[j]][1].keys())[0]
+                        b=list(dummy_diagram[k[i]][1].keys())[0]
+                        p=list(dummy_diagram[k[i]][1].values())[0]
+                        dummy_diagram[b][1][c]=p
+                        dummy_diagram[c][1][b]=p
                         del dummy_diagram[k[j]]
                         del dummy_diagram[k[i]]
                         
-                        d=tuple(dummy_diagram)
+                        d=str(dummy_diagram)
                         if hash(d) in d_hash:
                             continue
                         else:
@@ -272,7 +280,7 @@ class FeynmanGenerator:
         #ok I need to write this again
         vertexes=0
         for k in diag.keys():
-            if not "out" in k:
+            if not "out" in str(k):
                 vertexes+=1
         return vertexes
     def GetVertices(self, lagrangian):
@@ -351,10 +359,10 @@ class FeynmanGenerator:
         i=0 
         v=0
         for k in diagram.keys():
-            if not "out" in k:
+            if not "out" in str(k):
                 v+=1
                 for c in diagram[k][1].keys():
-                    if not "out" in c:
+                    if not "out" in str(c):
                         i+=1
         i=i/2
         l=i-v+1
@@ -368,10 +376,10 @@ class FeynmanGenerator:
         cc=self.vertices
         all_vertices_are_correct=False
         loop_order=self.CalculateLoopOrder(diagram)
-        external_cotnribution=1
+        external_contribution=1
         verts=list()
         for k in diagram.keys():
-            if "out" in k:
+            if "out" in str(k):
                 particle=list(diagram[k][1].values())[0]
                 connector=list(diagram[k][1].keys())[0]
                 kc=str(k)+":"+str(connector)
@@ -382,11 +390,11 @@ class FeynmanGenerator:
             #when checking a vertex with a free parameter, assign "free"=0
             else:
                 vert=list()
-                external_contribution=external_contribution*-1*cc[k][0]
-                for nc in diagram[k]:
+                external_contribution=external_contribution*-1*cc[diagram[k][0]]
+                for nc in diagram[k][1].keys():
                     nkc=str(k)+":"+str(nc)
                     vert.append(nkc)
-                    if nkc.split(":") in momentum.keys().split(":"):
+                    if str(nkc).split(":") in str(momentum.keys()).split(":"):
                         continue
                     else:
                         particle=diagram[k][1][nc]
@@ -395,31 +403,33 @@ class FeynmanGenerator:
             #now we should test assigning values to all but looporder many free partices
                 verts.append(vert)
             frees=list()
-            f=len(momentum) % loop_order
-            for i in range(len(loop_order)):
-                k=list(momentum.keys())
-                if momentum[k[i]][1]==0:
-                    i+=1
-                frees.append(i)
+            f=len(momentum) % max(loop_order, 1)
+            if loop_order >0:
+                for i in range(int(loop_order)):
+                    k=list(momentum.keys())
+                    if momentum[k[i]][1]==0:
+                        i+=1
+                    frees.append(i)
 
             dmomentum=self.AssignValues(momentum,verts,frees)
             itt=0
             var=-1
         while all_vertices_are_correct==False:
-            for k in diagrams.keys():
-                for nc in diagrams[k].keys():
+            for k in diagram.keys():
+                for nc in diagram[k][1].keys():
                     vertex=list()
                     for m in dmomentum.keys():
-                        if nc in m and k in m:
+                        if str(nc) in str(m) and str(k) in str(m):
                             vm=dmomentum[m][1]
-                            if "free" in vm and not "+" in vm:
-                                vm=0
-                            elif "free+" in vm:
-                                vm.replace("free+", '')
-                                vm=int(vm)
-                            vertex.append(vm)
-                        else:
-                            continue
+                            if type(vm) is str:
+                                if "free" in vm and not "+" in vm:
+                                    vm=0
+                                elif "free+" in vm:
+                                    vm.replace("free+", '')
+                                    vm=int(vm)
+                                vertex.append(vm)
+                            else:
+                                continue
                 vertices_momenta.append(vertex)
             corrects=list()
             for v in vertices_momenta:
@@ -442,15 +452,15 @@ class FeynmanGenerator:
                 break
         integrand=list()
         for m in momentum.keys():
-            if "out" in m:
+            if "out" in str(m):
                 continue
             p=momentum[m][1]
-            if "free" in p:
-                if "+" in p:
+            if "free" in str(p):
+                if "+" in str(p):
                     p_parts=p.split("+")
                     free_params=list()
                     for k in p_parts:
-                        if "free" in k:
+                        if "free" in str(k):
                             free_params.append(k)
                     add_param=int(p_parts[-1])
                     integrand.append([free_params, add_param, ps[momementum[m][0]]])
@@ -464,10 +474,10 @@ class FeynmanGenerator:
     def Integrand(self, xs, x_add, m):
         x=sum(xs)
         return -1/(pow(x +x_add,2) +pow(m,2))
-    def IntegrandProduct(self, integrands):
+    def IntegrandProduct(self, variables, integrands_args):
         I=1
-        for i in integrands:
-            I=I*self.Integrand(i[0], i[1], i[2])
+        for i in range(len(variable)):
+            I=I*self.Integrand(varaibles[i], integrand_args[1][i], integrand_args[2][i])
         return I
     def CalculateScatteringAmplitude(self, diagram):
         #this method takes in a diagram in the graph form 
@@ -475,13 +485,22 @@ class FeynmanGenerator:
         sa=1
         pi=3.14159
         integrands, external_contribution=self.ImposeZeroExternalMomentum(diagram)
-        sa=external_contrbution
+        sa=external_contribution
         loop=self.CalculateLoopOrder(diagram)
         #now I need to digest the integrands as they are non-trivial
         #have loop_order many variables to integrate over
-        bounds=[[0, self.cutoff]]*loop
+        bounds=[[0, self.cutoff]]
         #this has given n many copies of the bound
-        sa=sa*integrate.nquad(self.IntegrandProduct, bounds, args=([x for x in integrands]))    
+        #if loop>0:
+         #   if not integrands[0][0]==['']:
+          #      int_arg=[[integrands[i][1] for i in range(len(integrands))],[integrands[i][2] for i in range(len(integrands))]]
+           #     print(integrands)
+            #print([integrands[i][0] for i in range(len(integrands))])
+            #    sa=sa*integrate.nquad(self.IntegrandProduct, bounds, args=(int_arg))    #in an effort to get something out faster, drop the delta function requirement
+        for i in integrands:
+            p=lambda x,a: -1/(2*pi*pi*(pow(x,2)+pow(a,2)))
+            y, e=integrate.quad(p, 0, self.cutoff, args=(i[2],))
+            sa=sa*y
         return sa
     def heuristic(self, diagram, propagator):
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 
@@ -489,29 +508,64 @@ class FeynmanGenerator:
         #all this is saying is really just contributions to scattering amplitude and order of divergence
         avg_constant=0
         total_vertexs=0
+        h=1000
         vertexs=self.vertices.copy()
-        in_out=len(diagram[0][1])+len(diagram[0][2]) #this is base level
-        n_lines=sum([len(diagram[1][x]) for x in diagram[1].keys])
-        in_out_new_contribution=0
-        for vk in vertexs.keys():
-            if propagator in vk:
-                avg_constant+=vertexs[vk]
-                total_vertexs+=1
-                in_out_new_contribution+=len(vk.split(","))-1
-        if total_vertexs !=0:
-            avg_constant=float(avg_constant)/total_vertexs
-            in_out_new_contribution=in_out_new_contribution/total_vertexs
-        SA=diagram[2][0] #current scattering amplitude
-        m=self.propagators[p][0] #mass of the propagator
-        starting_coupling_constant=self.CountVertices(diagram)[1]
+        in_out=0 #this is base level
+        if type(diagram) is list:
+            for x in diagram[1].keys():
+                if "out" in str(x):
+                    in_out+=1
+            n_lines=1/2*sum([len(diagram[1][x]) for x in diagram[1].keys()])
+            in_out_new_contribution=0
+            for vk in vertexs.keys():
+                if propagator in vk:
+                    avg_constant+=vertexs[vk]
+                    total_vertexs+=1
+                    in_out_new_contribution+=len(vk.split(", "))-1
+            if total_vertexs !=0:
+                avg_constant=float(avg_constant)/total_vertexs
+                in_out_new_contribution=in_out_new_contribution/total_vertexs
+            SA=diagram[2] #current scattering amplitude
+            m=self.propagators[propagator] #mass of the propagator
+            starting_coupling_constant=1
+            for node in diagram[1].keys():
+                staring_coupling_constant=starting_coupling_constant*diagram[1][node][0]
         #so I need count vertices to return a list of the form 
         #(count of vertexs, product of coupling constants, list of vertexs)
-        h=1/SA*(starting_coupling_constant*avg_constant)/pow(m,2)
-        n_lines+=in_out_new_contribution
-        in_out+=in_out_new_contribution
-        h+= 1-in_out/n_lines
+            h=1/SA*(starting_coupling_constant*avg_constant)/pow(m,2)
+            n_lines+=in_out_new_contribution
+            in_out+=in_out_new_contribution
+            h+= in_out/n_lines-1
+            return h
+        elif type(diagram) is dict:
+            for x in diagram.keys():
+                if "out" in str(x):
+                    in_out+=1
+            n_lines=1/2*sum([len(diagram[x]) for x in diagram.keys()])
+            in_out_new_contribution=0
+            for vk in vertexs.keys():
+                if propagator in vk:
+                    avg_constant+=vertexs[vk]
+                    total_vertexs+=1
+                    in_out_new_contribution+=len(vk.split(", "))-1
+                if total_vertexs !=0:
+                    avg_constant=float(avg_constant)/total_vertexs
+                    in_out_new_contribution=in_out_new_contribution/total_vertexs
+                SA=self.CalculateScatteringAmplitude(diagram)
+                m=self.propagators[propagator] #mass of the propagator
+                starting_coupling_constant=1
+                for node in diagram.keys():
+                    staring_coupling_constant=starting_coupling_constant*diagram[node][0]
+        #so I need count vertices to return a list of the form 
+        #(count of vertexs, product of coupling constants, list of vertexs)
+                h=1/SA*(starting_coupling_constant*avg_constant)/pow(m,2)
+                n_lines+=in_out_new_contribution
+                in_out+=in_out_new_contribution
+                h+= in_out/n_lines-1
+                return h
+            else:
+                return 100
         return h
-        
 
              
         

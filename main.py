@@ -80,7 +80,8 @@ for vd in vertexdiagrams:
             v=g[m][0]
     graphdiagrams[v]=g
 for d in graphdiagrams.keys():
-    visual_diagrams(graphsdiagrams[d], str(d))
+    visual_diagrams.append([graphdiagrams[d], str(d)])
+    print(visual_diagrams)
 diagram=sc.DecidePointFunction()
 print("\n The expansion will happen on the diagrams corresponding to traveling between states: " + diagram[0][0])
 [wilson_answer_diagram, wSA]=sc.PerformSearch("WR")

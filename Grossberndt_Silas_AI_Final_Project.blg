@@ -1,0 +1,60 @@
+This is BibTeX, Version 0.99d (TeX Live 2019/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: Grossberndt_Silas_AI_Final_Project.aux
+The style file: ieeetr.bst
+Database file #1: XAI_renorm.bib
+Warning--I didn't find a database entry for "Hodeges1990"
+Warning--I didn't find a database entry for "Hansenfratz2019"
+Warning--I didn't find a database entry for "Bednayakov2016"
+Warning--I didn't find a database entry for "Fabinao2022"
+Warning--I didn't find a database entry for "Hansen"
+Warning--empty journal in Mehta2014
+Warning--empty journal in Beny2013
+Warning--empty journal in Harlander1999
+Warning--empty journal in Myers1996
+Warning--empty author in 
+Warning--empty title in 
+Warning--empty journal in 
+Warning--empty year in 
+You've used 16 entries,
+            1876 wiz_defined-function locations,
+            580 strings with 5531 characters,
+and the built_in function-call counts, 2762 in all, are:
+= -- 246
+> -- 96
+< -- 0
++ -- 40
+- -- 24
+* -- 183
+:= -- 405
+add.period$ -- 16
+call.type$ -- 16
+change.case$ -- 14
+chr.to.int$ -- 0
+cite$ -- 24
+duplicate$ -- 153
+empty$ -- 306
+format.name$ -- 24
+if$ -- 664
+int.to.chr$ -- 0
+int.to.str$ -- 16
+missing$ -- 14
+newline$ -- 52
+num.names$ -- 14
+pop$ -- 77
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 86
+stack$ -- 0
+substring$ -- 78
+swap$ -- 36
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 8
+while$ -- 23
+width$ -- 18
+write$ -- 128
+(There were 13 warnings)

@@ -8,6 +8,7 @@ class FeynmanSearch:
     def __init__(self, Lagrangian):
         cutoff_initial=0
         self.l=Lagrangian
+        self.diagram_to_use=list()
         for m in Lagrangian["particles"].values():
             cutoff_initial+=m*m
         cutoff_intial=4*cutoff_initial
@@ -17,7 +18,6 @@ class FeynmanSearch:
         #note that this is the sum of the square of the energies of a kinetic energy=m
         #so this is a intial very energetic system
         self.diagram_base=FeynmanGenerator(Lagrangian, cutoff_intial)
-        self.diagram_to_use
         #goal is delta cc <heuristic cost of lowest
     def ResetValues(self):
         self.css=self.l["coupling_constants"]
@@ -61,6 +61,8 @@ class FeynmanSearch:
             for d in diagram.keys():
                 vs.append(diagram[d][0])
             for v in vs:
+                if not v in self.css.keys():
+                    continue
                 c=1/(1/self.ccs[v] +deltasa*math.log(co))
                 if c<=0 or c>=self.ccs[v]:
                     return False
@@ -92,7 +94,7 @@ class FeynmanSearch:
                 hs=list(queue.keys())
                 if len(hs)==0:
                     break
-                hs.sort()
+                hs.sort(reverse=True)
                 highest_priority=hs[0]
             cd=queue[highest_priority].pop()
             diags=generator.ExpandDiagram(cd[0], *cd[1])
@@ -109,7 +111,7 @@ class FeynmanSearch:
                         else:
                             generator.UpdateCutoffandVertex(self.cutoff, self.css)
             sa=sum(deltasa)
-            scattering_amplitude+=sa
+            scattering_amp+=sa
             if sa<highest_priority:
                 at_goal=True
                 return [cd[0], scattering_amplitude]
@@ -120,7 +122,7 @@ class FeynmanSearch:
                         queue[c[2]].append([c[0], c[1]])
                     else:
                         queue[c[2]]=[[c[0], c[1]]]
-                        highest_priority=min(c[2], highest_priority)
+                        highest_priority=max(c[2], highest_priority)
 
                 
 
@@ -130,12 +132,12 @@ class FeynmanSearch:
         correction=dict()
         for d in diagrams:
             cs=generator.GenerateNextOrder(d[1])
-            c=sum(cs)/len(cs)
-            dh=hash(d)
+            c=sum([x[2] for x in cs])/len(cs)
+            dh=hash(str(d))
             correction[dh]=c/d[2]
         diagram_to_use=diagrams[0]
         for d in diagrams:
-            if correction[hash(d)]<=correction[hash(diagram_to_use)]:
+            if correction[hash(str(d))]<=correction[hash(str(diagram_to_use))]:
                 diagram_to_use=d
             else:
                 continue
