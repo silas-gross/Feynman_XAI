@@ -83,6 +83,24 @@ for d in graphdiagrams.keys():
     visual_diagrams(graphsdiagrams[d], str(d))
 diagram=sc.DecidePointFunction()
 print("\n The expansion will happen on the diagrams corresponding to traveling between states: " + diagram[0][0])
-
-[final_diagram, 
+[wilson_answer_diagram, wSA]=sc.PerformSearch("WR")
+willson_couplings=sc.css
+wco=sc.cutoff
+[sc_answer_diagram, scSA]=sc.PerformSearch("SC")
+sc_couplings=sc.css
+sc_cutoff=sc.cutoff
+print("\n finished running, results have been output to file output.txt")
+outfile=open("output.txt", "w")
+outfile.write("Willson Renormalization answer \n \n")
+outfile.write("diagram graph: " +str(wilson_answer_diagram))
+outfile.write("\n final scattering amplitude: " +str(wSA))
+outfile.write("\n vertex couplings: " +str(willson_couplings))
+outfile.write("\n cutoff momenta: "+ str(wco))
+outfile.write("\n \n Synthetic Coupling Renormalization answer \n \n")
+outfile.write("diagram graph: " +str(sc_answer_diagram))
+outfile.write("\n final scattering amplitude: " +str(scSA))
+outfile.write("\n vertex couplings: " +str(sc_couplings))
+outfile.write("\n cutoff momenta: " +str(sc_cutoff))
+outfile.close()
+print("\n Bye!")
 
