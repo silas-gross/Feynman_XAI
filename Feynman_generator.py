@@ -120,8 +120,14 @@ class FeynmanGenerator:
                     children.append(self.GenerateOutput(diagram, prop_and_nodes))
         return children
 
+    def Same(self, particle_list_1, particle_list_2):
+        none_diff=True
+        for j in particle_list_1:
+            if not j in particle_list_2:
+                none_diff=False
+        return none_diff
 
-    def ExpandDiagram(self, diagram, leg, from_node, to_node):
+    def ExpandDiagram(self, diagram, leg, from_node, to_node, second=False, old_ext=[]):
         #this will take in a diagram and expand the vertex along a specific propagator
         #redoing the heuristic so that it just accounts for the mass on the propagator as a proxy for a scaling on the SA
         #so it will be average of coupling constant over the vertexes including the propagator /m^2
@@ -131,23 +137,28 @@ class FeynmanGenerator:
         ps=self.propagators
         #just take in the graph form of the diagram
         out_diagrams=list()
+        external_particles=list()
         diagrams_hash=self.diagram_list
         n_out=0
         for node in diagram.keys():
             if "out" in node:
                 n_out+=1
+                external_particles.append(list(diagram[node][1].values())[0])
+        if second==True:
+            external_particles=old_ext
         for v in vs:
             particles_in_vertex=v.split(",")
             if leg in particles_in_vertex:
+                new_external=list()
                 diagram_to_expand=deepcopy(diagram)
-                conections=diagram_to_expand[from_node]
+                conections=diagram_to_expand[from_node][1]
                 del connections[to_node]
                 new_node=len(diagram_to_expand.keys())+1
                 connections[new_node]=leg
-                diagram_to_expand[from_node]=connections
-                diagram_to_expand[new_node]={to_node:leg, from_node:leg}
-                del diagram_to_expand[to_node][from_node]
-                diagram_to_expand[to_node][new_node]=leg
+                diagram_to_expand[from_node][1]=connections
+                diagram_to_expand[new_node]=[v,{to_node:leg, from_node:leg}]
+                del diagram_to_expand[to_node][1][from_node]
+                diagram_to_expand[to_node][1][new_node]=leg
                 original_particle=0
                 out_n=0
                 for r in particles_in_vertex:
@@ -157,12 +168,34 @@ class FeynmanGenerator:
                     else:
                         out_n+=1
                         node_name="out_"+str(out_n+n_out)
-                        diagram_to_expand[new_node][node_name]=r
-                        diagram_to_expand[node_name]={new_node: r}
+                        diagram_to_expand[new_node][1][node_name]=r
+                        diagram_to_expand[node_name]=[0,{new_node: r}]
+                        new_external.append(r)
                 d=tuple(diagrams_to_expand)
+                if not self.Same(new_external, external_particles):
+                    if second==False:
+                        for m in diagrams_to_expand.keys():
+                            for n in diagrams_to_expand[m][1].keys():
+                                ds=self.ExpandDiagram(diagrams_to_expand, diagrams_to_expand[m][1][n], m, n, True, external_particles)
+                                for dss in ds:
+                                    nep=list()
+                                    for node in dss.keys():
+                                        if "out" in node:
+                                            nep.append(list(dss[node][1].values())[0])
+                                    if self.Same(nep,external_particles):
+                                        tdss=tuple(dss)
+                                        if hash(tdss) in diagrams_hash:
+                                            continue
+                                        else:
+                                            out_diagrams.append(dss)
+                                            diagrams_hash.append(tdss)
+                                    else:
+                                        continue
+
                 if hash(d) in diagrams_hash:
                     continue
                 else:
+
                     out_diagrams.append(diagrams_to_expand)
                     diagrams_hash.append(d)
                 #so now I've added all the diagrams 
@@ -179,14 +212,18 @@ class FeynmanGenerator:
                     else:
                         for dd in dl:
                             d=tuple(dd)
+                            new_external=list()
+                            for node in dd:
+                                if "out" in node:
+                                    new_external.append(list(dd[node][1].values())[0])
+                            if not self.Same(new_external, external_particles):
+                                continue
                             if hash(d) in diagrams_hash:
                                 continue
                             else:
                                 out_diagrams.append(dd)
                                 diagrams_hash.append(d)
                 return out_diagrams
-
-
 
 
     def RecombineExteriors(self, diagram):
