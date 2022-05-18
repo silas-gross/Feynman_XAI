@@ -15,6 +15,9 @@ class FeynmanGenerator:
         self.vertex_count=self.CountVertecies()
         self.diagram_output=self.GenerateOutput()
         self.diagram_list=list() #list of the hashs of diagrams
+    def UpdateCutoffandVertex(self, new_cutoff, newccs):
+        self.cutoff=new_cutoff
+        self.vertices=newccs
     def GenerateDiagrams():
         #this will generate diagrams up to loop order given 
         #if loop order=-1, generate until contribution to scattering amplitude is diminneshed by a power of lambda 

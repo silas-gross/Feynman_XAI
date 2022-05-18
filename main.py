@@ -1,6 +1,6 @@
 #this is the enerty point and contains the GUI
 import tkinter as tk
-from Feynman_search import Feynman_Search
+from Feynman_search import FeynmanSearch
 import time 
 
 #top=tk.Tk()
@@ -11,6 +11,8 @@ import time
 #    w.create_text(50, 250, text="Enter Lagrangian", font=('calibre', 15, 'bold'))
 #
 #
+def DrawFeynmanDiagram(diag, title=''):
+
 def LagrangianInput():
     #command line input for Lagrangian
     #idealy want to move this over to GUI but will see if I get the time
@@ -66,4 +68,21 @@ print("\n To get started please follow the instructions to enter the Lagrangian"
 L=LagrangianInput()
 print("\n Thank you for entering lagrangian, now we will expand all the vertex and tree level diagrams")
 print("\n This expansion chooses the n-point function that we will investigate for corrections")
+sc=FeynmanSearch(L)
+vertexdiagrams=sc.diagram_base.diagrams
+graphdiagrams=dict()
+visual_diagrams=list()
+for vd in vertexdiagrams:
+    g=vd[1]
+    v=""
+    for m in g.keys():
+        if not "out" in m:
+            v=g[m][0]
+    graphdiagrams[v]=g
+for d in graphdiagrams.keys():
+    visual_diagrams(graphsdiagrams[d], str(d))
+diagram=sc.DecidePointFunction()
+print("\n The expansion will happen on the diagrams corresponding to traveling between states: " + diagram[0][0])
+
+[final_diagram, 
 
