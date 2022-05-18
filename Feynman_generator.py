@@ -73,7 +73,8 @@ class FeynmanGenerator:
                         out[out_node]=parts[j]
                         out_cons[out_node]=[0, {'1':parts[j]}]
                     out_cons['1']=[v, out]
-                    d=tuple([sform, l, rparts], out_cons, vs[v]/sf, 2k-n, 0)
+                    r=2*k-n
+                    d=tuple([sform, l, rparts], out_cons, vs[v]/sf,r , 0)
                     #I need to go through all of this and sort out what I need the diagram to have and where
                     if not hash(d) in hash_diagrams:
                         diagrams.append(d)
@@ -102,7 +103,7 @@ class FeynmanGenerator:
                         one_branch=True
                         diagrams.append(j)
                         continue
-            if !one_branch:
+            if not one_branch:
                 all_added=True
                 break
         if all_added==True:
@@ -283,7 +284,7 @@ class FeynmanGenerator:
             vs[c]=cc[c]
             #again this is really just reading off a value
         return vs
-    def GetPropagators(self, lagrangian)
+    def GetPropagators(self, lagrangian):
         #calculate the propagator for each particle that we need to account for
         #return dictionary 
         ps=dict()
@@ -298,7 +299,7 @@ class FeynmanGenerator:
         s=sum(momenta)
         if s==0:
             all_good=True
-        while all_good=False
+        while all_good==False:
             for i in range(len(weights)):
                 if momenta[i]==0:
                     continue
@@ -314,7 +315,7 @@ class FeynmanGenerator:
     def AssignValues(self, momenta,verts, frees):
         #this assigns values to the non-free momenta
         max_val=len(momenta)-len(frees)
-        vals=[0:max_val]
+        vals=list(range(max_val+1))
         m=list(momenta.keys())
         mvs=dict()
         for i in range(len(m)):
@@ -323,7 +324,7 @@ class FeynmanGenerator:
                 momenta[m[i]][1]=fv
                 #this has set the free variables
         for v in verts:
-            for vl in v
+            for vl in v:
                 if momenta[vl][1]==-1:
                     f_in_v=""
                     needs_random=False
@@ -337,7 +338,7 @@ class FeynmanGenerator:
                                 needs_random=True
                             elif momenta[vo][1]==0:
                                 continue
-                            else
+                            else:
                                 f_in_v+=str(momenta[vo][1])
                     if needs_random:
                         val_to_give=choice(vals)
@@ -408,7 +409,7 @@ class FeynmanGenerator:
             for k in diagrams.keys():
                 for nc in diagrams[k].keys():
                     vertex=list()
-                    for m in dmomentum.keys()
+                    for m in dmomentum.keys():
                         if nc in m and k in m:
                             vm=dmomentum[m][1]
                             if "free" in vm and not "+" in vm:
@@ -455,14 +456,14 @@ class FeynmanGenerator:
                     integrand.append([free_params, add_param, ps[momementum[m][0]]])
                 else:
                     fp=p.replace("free", '')
-                    integrand.append([[fp],0, ps[momentum[m][0]])
+                    integrand.append([[fp],0, ps[momentum[m][0]]])
             else:
                 part=momentum[m][0]
                 external_contribution=external_contribution*(-1)/pow(ps[part], 2)
         return [integrand, external_contribution]
     def Integrand(self, xs, x_add, m):
         x=sum(xs)
-        return -1*/(pow(x +x_add,2) +pow(m,2))
+        return -1/(pow(x +x_add,2) +pow(m,2))
     def IntegrandProduct(self, integrands):
         I=1
         for i in integrands:
@@ -480,7 +481,7 @@ class FeynmanGenerator:
         #have loop_order many variables to integrate over
         bounds=[[0, self.cutoff]]*loop
         #this has given n many copies of the bound
-        sa=sa*integrate.nquad(self.IntegrandProduct, bounds, args=(*integrands))    
+        sa=sa*integrate.nquad(self.IntegrandProduct, bounds, args=([x for x in integrands]))    
         return sa
     def heuristic(self, diagram, propagator):
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 

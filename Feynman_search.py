@@ -38,14 +38,14 @@ class FeynmanSearch:
             dco=0.99*self.cutoff*deltasa/self.ccs[verts]
             dcc=0
             good_change=False
-            while good_change=False:
+            while good_change==False:
                 dcc=-self.cutoff*deltasa/dco
                 good_change=self.SynthConstraint(self.cutoff, dco, dcc, vert, deltasa)
                 if good_change:
                     break
                 else:
                     dco+=-0.05*dco
-            if self.ccs[verts]+dcc<=0 or self.cutoff-dco<=0
+            if self.ccs[verts]+dcc<=0 or self.cutoff-dco<=0:
                 return False
             else:
                 self.ccs[verts]+=dcc
@@ -55,10 +55,10 @@ class FeynmanSearch:
 
 
         #Willsonian here would be beta function which imposes that 1/cc-1/new cc=change in SA*log(1/cutoff)
-        if method="WR":
+        if method=="WR":
             co=self.cutoff
             vs=list()
-            for d in diagram.keys()
+            for d in diagram.keys():
                 vs.append(diagram[d][0])
             for v in vs:
                 c=1/(1/self.ccs[v] +deltasa*math.log(co))
