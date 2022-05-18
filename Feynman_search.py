@@ -1,11 +1,13 @@
 #This file is to perform the main searching over the Feynman diagrams, LAO* approach is goal
 #CSP is also to be put-into this search, fill back constraints to cut methods
 from Feynman_generator  import FeynmanGenerator
-from Renormalization    import Willson
-from Renormalization    import Sythetic
+#from Renormalization    import Willson
+#from Renormalization    import Sythetic
+import math
 class FeynmanSearch:
     def __init__(self, Lagrangian):
         cutoff_initial=0
+        self.l=Lagrangian
         for m in Lagrangian["particles"].values():
             cutoff_initial+=m*m
         cutoff_intial=4*cutoff_initial
@@ -15,7 +17,13 @@ class FeynmanSearch:
         #note that this is the sum of the square of the energies of a kinetic energy=m
         #so this is a intial very energetic system
         self.diagram_base=FeynmanGenerator(Lagrangian, cutoff_intial)
+        self.diagram_to_use
         #goal is delta cc <heuristic cost of lowest
+    def ResetValues(self):
+        self.css=self.l["coupling_constants"]
+        self.masses=self.l["particles"].values()
+        ci=sum([m*m for m in self.masses])
+        self.cutorr=4*ci
     def SynthConstraint(self, co, dco, dcc, vert, deltasa):
         lhs=co*deltasa
         rhs=(co-dco)*sc*(self.ccs[vert]+dco)
@@ -37,17 +45,85 @@ class FeynmanSearch:
                     break
                 else:
                     dco+=-0.05*dco
-            self.ccs[verts]+=dcc
-            self.cutoff+=-dco
+            if self.ccs[verts]+dcc<=0 or self.cutoff-dco<=0
+                return False
+            else:
+                self.ccs[verts]+=dcc
+                self.cutoff+=-dco
+                return True
+
 
 
         #Willsonian here would be beta function which imposes that 1/cc-1/new cc=change in SA*log(1/cutoff)
         if method="WR":
+            co=self.cutoff
+            vs=list()
+            for d in diagram.keys()
+                vs.append(diagram[d][0])
+            for v in vs:
+                c=1/(1/self.ccs[v] +deltasa*math.log(co))
+                if c<=0 or c>=self.ccs[v]:
+                    return False
+                else:
+                    self.ccs[v]=c
+            return True
 
-        
-    def PerformSearchWillson(self, diagram):
-#this right now needs to be fleshed out more, and I need to figure out what a sucessful goal can be defined as 
-    def PerformSearchRunning(self, diagram)
+    def PerformSearch(self, method):
+        #get priority queue from Feynman Generator
+        #first reset the coupling constants to the original values
+        self.ResetValues()
+        generator=self.diagram_base
+        di=self.diagram_to_use
+        d=di[1]
+        at_goal=False
+        children=generator.GenerateNextOrder(d)
+        queue=dict()
+        scattering_amp=generator.CalculateScatteringAmplitude(d)
+        for c in children:
+            if c[2] in queue.keys():
+                queue[c[2]].append([c[0], c[1]])
+            else:
+                queue[c[2]]=[[c[0], c[1]]]
+        hs=list(queue.keys())
+        highest_priority=min(hs)
+        while len(queue)>0:
+            if len(queue[highest_priority])==0:
+                queue.pop(highest_priority)
+                hs=list(queue.keys())
+                if len(hs)==0:
+                    break
+                hs.sort()
+                highest_priority=hs[0]
+            cd=queue[highest_priority].pop()
+            diags=generator.ExpandDiagram(cd[0], *cd[1])
+            kold=cd[0].keys()
+            deltasa=[]
+            for d1 in diags:
+                deltasa.append(generator.CalculateScatteringAmplitude(d1))
+                knew=d1.keys()
+                for k in knew:
+                    if not k in kold:
+                        good=self.ImposeConstraints(method, k, deltasa[-1],d1)
+                        if not good:
+                            break
+                        else:
+                            generator.UpdateCutoffandVertex(self.cutoff, self.css)
+            sa=sum(deltasa)
+            scattering_amplitude+=sa
+            if sa<highest_priority:
+                at_goal=True
+                return [cd[0], scattering_amplitude]
+            else:
+                child=generator.GenerateNextOrder(cd[0])
+                for c in child:
+                    if c[2] in queue.keys():
+                        queue[c[2]].append([c[0], c[1]])
+                    else:
+                        queue[c[2]]=[[c[0], c[1]]]
+                        highest_priority=min(c[2], highest_priority)
+
+                
+
     def DecidePointFunction(self):
         generator=self.diagram_base
         diagrams=generator.diagrams
@@ -63,4 +139,5 @@ class FeynmanSearch:
                 diagram_to_use=d
             else:
                 continue
+        self.diagram_to_use=diagram_to_use
         return diagram_to_use

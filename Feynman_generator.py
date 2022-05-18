@@ -112,14 +112,14 @@ class FeynmanGenerator:
         #what this is doing is actulalay generating the queue
         legs=list()
         children=list()
-        for n in diagram[1].keys():
-            for m in diagram[1][n].keys():
+        for n in diagram.keys():
+            for m in diagram[n][1].keys():
                 leg=str(n)+":"+str(m)
                 lgr=str(m)+":"+str(m)
                 found=(leg in legs) or (lgr in legs)
                 if not found:
                     legs.append(leg)
-                    prop_and_nodes=[diagram[1][n][m], n, m]
+                    prop_and_nodes=[diagram[n][1][m], n, m]
                     children.append(self.GenerateOutput(diagram, prop_and_nodes))
         return children
 
