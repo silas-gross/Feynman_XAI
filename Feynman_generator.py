@@ -6,12 +6,12 @@ from copy import deepcopy
 from scipy import integrate
 from random import choice
 class FeynmanGenerator:
-    def __init__(self, lagrangian, looporder=1):
+    def __init__(self, lagrangian, cutoff, looporder=1):
         self.order=looporder
+        self.cutoff=cutoff
         self.vertices=self.GetVertices(lagrangian)
         self.propagator=self.GetPropagators(lagrangian)
         self.diagrams=self.GenerateDiagrams()
-        self.scattering_amp=self.SumDiagrams()
         self.vertex_count=self.CountVertecies()
         self.diagram_output=self.GenerateOutput()
         self.diagram_list=list() #list of the hashs of diagrams
@@ -64,10 +64,13 @@ class FeynmanGenerator:
                     sform+="->"
                     sform=sform.join(str(x) for x in rparts)
                     out=dict() #this is the dictionary of the connections to the exterior
+                    outcons=dict()
                     for j in range(len(parts)):
                         out_node="out_"+str(j)
                         out[out_node]=parts[j]
-                    d=tuple((sform, l, rparts), {'1':[v, out]}, vs[v]/sf, 2k-n, 0)
+                        out_cons[out_node]=[0, {'1':parts[j]}]
+                    out_cons['1']=[v, out]
+                    d=tuple([sform, l, rparts], out_cons, vs[v]/sf, 2k-n, 0)
                     #I need to go through all of this and sort out what I need the diagram to have and where
                     if not hash(d) in hash_diagrams:
                         diagrams.append(d)
@@ -103,6 +106,21 @@ class FeynmanGenerator:
             return diagrams
     def GenerateNextOrder(self, diagram):
         #need to figure out if I actually want to use this, if so, need to update to match with current Expand
+        #what this is doing is actulalay generating the queue
+        legs=list()
+        children=list()
+        for n in diagram[1].keys():
+            for m in diagram[1][n].keys():
+                leg=str(n)+":"+str(m)
+                lgr=str(m)+":"+str(m)
+                found=(leg in legs) or (lgr in legs)
+                if not found:
+                    legs.append(leg)
+                    prop_and_nodes=[diagram[1][n][m], n, m]
+                    children.append(self.GenerateOutput(diagram, prop_and_nodes))
+        return children
+
+
     def ExpandDiagram(self, diagram, leg, from_node, to_node):
         #this will take in a diagram and expand the vertex along a specific propagator
         #redoing the heuristic so that it just accounts for the mass on the propagator as a proxy for a scaling on the SA
@@ -202,14 +220,13 @@ class FeynmanGenerator:
         return diagrams_out
 
 
-    def GenerateOutput(self):
+    def GenerateOutput(self, diagram, prop_and_nodes):
         #need to figure out what this should be
-    def SumDiagrams(self, diagrams):
+        output=[diagram, prop_and_nodes, self.heuristic(diagram, prop_and_nodes[0])]
+        return output
+    def SumDiagrams(self, amplitudes):
         #This will sum up all the present diagrams in the list of diagrams
-        sum_of_amplitudes=0
-        for l in diagrams:
-            sum_of_amplitudes+=l[1]
-        return sum_of_amplitudes
+        return sum(amplitudes)
     def CountVertices(self, diag):
         #ok I need to write this again
         vertexes=0
@@ -411,7 +428,7 @@ class FeynmanGenerator:
         for i in integrands:
             I=I*self.Integrand(i[0], i[1], i[2])
         return I
-    def CalculateScatteringAmplitude(self, diagram, cutoff):
+    def CalculateScatteringAmplitude(self, diagram):
         #this method takes in a diagram in the graph form 
         #then it passes that diagram off to a CSP approach to fix the non-free parameters
         sa=1
@@ -421,7 +438,7 @@ class FeynmanGenerator:
         loop=self.CalculateLoopOrder(diagram)
         #now I need to digest the integrands as they are non-trivial
         #have loop_order many variables to integrate over
-        bounds=[[0, cutoff]]*loop
+        bounds=[[0, self.cutoff]]*loop
         #this has given n many copies of the bound
         sa=sa*integrate.nquad(self.IntegrandProduct, bounds, args=(*integrands))    
         return sa
