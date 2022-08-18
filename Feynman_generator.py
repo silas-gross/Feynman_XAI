@@ -5,7 +5,7 @@ from math import comb
 from copy import deepcopy
 from scipy import integrate
 from random import choice
-import networksx as nx
+import networkx as nx
 import matplotlib.pyplot as plt
 
 class FeynmanGenerator:

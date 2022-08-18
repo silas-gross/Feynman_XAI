@@ -4,6 +4,8 @@ from Feynman_generator  import FeynmanGenerator
 #from Renormalization    import Willson
 #from Renormalization    import Sythetic
 import math
+import matplotlib.pyplot as plt
+
 class FeynmanSearch:
     def __init__(self, Lagrangian):
         cutoff_initial=0
@@ -77,6 +79,8 @@ class FeynmanSearch:
         generator=self.diagram_base
         di=self.diagram_to_use
         d=di[1]
+        generator.DrawDiagram(di)
+        plt.show()
         at_goal=False
         children=generator.GenerateNextOrder(d)
         queue=dict()
@@ -142,4 +146,6 @@ class FeynmanSearch:
             else:
                 continue
         self.diagram_to_use=diagram_to_use
+        generator.DrawDiagram(dict(diagram_to_use))
+        plt.show()
         return diagram_to_use
