@@ -508,12 +508,14 @@ class FeynmanGenerator:
     def DrawDiagram(self, diagram):
         #this just takes in the diagram and draws the graph from the dictionary
         Diagram_Graph=nx.Graph()
-        Diagram_Graph.add_nodes_from(diagram)
+        for k in diagram.keys():
+            Diagram_Graph.add_node(k)
         for k in diagram.keys():
             if type(diagram[k]) is dict:
                 for m in diagram[k].keys():
                     Diagram_Graph.add_edge(k,m,{'label':diagrams[k][m]})
         drawn_graph=nx.draw_networkx_edge_labels(Diagram_Graph, nx.spring_layout(Diagram_Graph))
+        plt.show()
         return drawn_graph
     def heuristic(self, diagram, propagator):
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 

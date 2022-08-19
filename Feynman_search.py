@@ -146,6 +146,6 @@ class FeynmanSearch:
             else:
                 continue
         self.diagram_to_use=diagram_to_use
-        generator.DrawDiagram(dict(diagram_to_use))
+        generator.DrawDiagram(diagram_to_use[1])
         plt.show()
         return diagram_to_use
