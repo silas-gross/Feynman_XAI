@@ -79,7 +79,7 @@ class FeynmanSearch:
         generator=self.diagram_base
         di=self.diagram_to_use
         d=di[1]
-        generator.DrawDiagram(di)
+        generator.DrawDiagram(d)
         plt.show()
         at_goal=False
         children=generator.GenerateNextOrder(d)
@@ -91,7 +91,14 @@ class FeynmanSearch:
             else:
                 queue[c[2]]=[[c[0], c[1]]]
         hs=list(queue.keys())
-        highest_priority=min(hs)
+        htemp=max(hs)+10
+        hihgest_priority=0
+        for h in hs:
+            ha=abs(h)
+            if ha<htemp:
+                highest_priority=h
+                htemp=ha
+        #highest_priority=min(hs)
         while len(queue)>0:
             if len(queue[highest_priority])==0:
                 queue.pop(highest_priority)
@@ -116,9 +123,10 @@ class FeynmanSearch:
                             generator.UpdateCutoffandVertex(self.cutoff, self.css)
             sa=sum(deltasa)
             scattering_amp+=sa
-            if sa<highest_priority:
+            #print(highest_priority)
+            if sa<abs(highest_priority):
                 at_goal=True
-                return [cd[0], scattering_amplitude]
+                return [cd[0], scattering_amp]
             else:
                 child=generator.GenerateNextOrder(cd[0])
                 for c in child:
