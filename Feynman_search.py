@@ -25,10 +25,11 @@ class FeynmanSearch:
         self.css=self.l["coupling_constants"]
         self.masses=self.l["particles"].values()
         ci=sum([m*m for m in self.masses])
-        self.cutorr=4*ci
+        self.cutoff=4*ci
     def SynthConstraint(self, co, dco, dcc, vert, deltasa):
         lhs=co*deltasa
-        rhs=(co-dco)*sc*(self.ccs[vert]+dco)
+        rhs=(co-dco)*dcc*(self.ccs[vert]+dco) #This line had sc for dcc, unclear what Was meant
+        
         if abs(lhs-rhs) < lhs/abs(dco-dcc):
             return True
         else:
@@ -42,7 +43,7 @@ class FeynmanSearch:
             good_change=False
             while good_change==False:
                 dcc=-self.cutoff*deltasa/dco
-                good_change=self.SynthConstraint(self.cutoff, dco, dcc, vert, deltasa)
+                good_change=self.SynthConstraint(self.cutoff, dco, dcc, verts, deltasa)
                 if good_change:
                     break
                 else:
@@ -92,7 +93,7 @@ class FeynmanSearch:
                 queue[c[2]]=[[c[0], c[1]]]
         hs=list(queue.keys())
         htemp=max(hs)+10
-        hihgest_priority=0
+        highest_priority=0
         for h in hs:
             ha=abs(h)
             if ha<htemp:

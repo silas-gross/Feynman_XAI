@@ -88,25 +88,6 @@ class FeynmanGenerator:
         # where I is the number of internal lines and V is number of vertices
         #first we need to set the current value of the scattering amplitude of each in state versus outstate
         #now expand out each diagram from single vertexes to build a new set of diagrams
-       # all_added=False
-        #while all_added==False:
-         #   one_branch=False
-         #   for d in diagrams:
-          #      print(d[1])
-          #      d_add=self.GenerateNextOrder(d)
-          #      for j in d_add:
-          #          if hash(str([*j])) in hash_diagrams:
-          #              d_add.remove(j)
-          #              continue
-          #          else:
-          #              hash_diagrams.append(hash(str([*j])))
-          #              one_branch=True
-          #              diagrams.append(j)
-          #              continue
-          #  if not one_branch:
-          #      all_added=True
-          #      break
-        #if all_added==True:
         return diagrams
     def GenerateNextOrder(self, diagram_a):
         #need to figure out if I actually want to use this, if so, need to update to match with current Expand
@@ -466,7 +447,7 @@ class FeynmanGenerator:
                         if "free" in str(k):
                             free_params.append(k)
                     add_param=int(p_parts[-1])
-                    integrand.append([free_params, add_param, ps[momementum[m][0]]])
+                    integrand.append([free_params, add_param, ps[momentum[m][0]]])
                 else:
                     fp=p.replace("free", '')
                     integrand.append([[fp],0, ps[momentum[m][0]]])
@@ -479,8 +460,8 @@ class FeynmanGenerator:
         return -1/(pow(x +x_add,2) +pow(m,2))
     def IntegrandProduct(self, variables, integrands_args):
         I=1
-        for i in range(len(variable)):
-            I=I*self.Integrand(varaibles[i], integrand_args[1][i], integrand_args[2][i])
+        for i in range(len(variables)):
+            I=I*self.Integrand(variables[i], integrands_args[1][i], integrands_args[2][i])
         return I
     def CalculateScatteringAmplitude(self, diagram):
         #this method takes in a diagram in the graph form 
@@ -513,7 +494,7 @@ class FeynmanGenerator:
         for k in diagram.keys():
             if type(diagram[k]) is dict:
                 for m in diagram[k].keys():
-                    Diagram_Graph.add_edge(k,m,{'label':diagrams[k][m]})
+                    Diagram_Graph.add_edge(k,m,{'label':diagram[k][m]})
         drawn_graph=nx.draw_networkx_edge_labels(Diagram_Graph, nx.spring_layout(Diagram_Graph))
         plt.show()
         return drawn_graph
@@ -570,7 +551,7 @@ class FeynmanGenerator:
                 m=self.propagators[propagator] #mass of the propagator
                 starting_coupling_constant=1
                 for node in diagram.keys():
-                    staring_coupling_constant=starting_coupling_constant*diagram[node][0]
+                    starting_coupling_constant=starting_coupling_constant*diagram[node][0]
         #so I need count vertices to return a list of the form 
         #(count of vertexs, product of coupling constants, list of vertexs)
                 h=1/SA*(starting_coupling_constant*avg_constant)/pow(m,2)
