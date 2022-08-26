@@ -525,7 +525,7 @@ class FeynmanGenerator:
             m=self.propagators[propagator] #mass of the propagator
             starting_coupling_constant=1
             for node in diagram[1].keys():
-                staring_coupling_constant=starting_coupling_constant*diagram[1][node][0]
+                starting_coupling_constant=starting_coupling_constant*diagram[1][node][0]
         #so I need count vertices to return a list of the form 
         #(count of vertexs, product of coupling constants, list of vertexs)
             h=1/SA*(starting_coupling_constant*avg_constant)/pow(m,2)
