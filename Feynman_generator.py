@@ -489,15 +489,22 @@ class FeynmanGenerator:
     def DrawDiagram(self, diagram):
         #this just takes in the diagram and draws the graph from the dictionary
         Diagram_Graph=nx.Graph()
+        particle_labels=dict()
         for k in diagram.keys():
             Diagram_Graph.add_node(k)
         for k in diagram.keys():
-            if type(diagram[k]) is dict:
-                for m in diagram[k].keys():
-                    Diagram_Graph.add_edge(k,m,{'label':diagram[k][m]})
-        drawn_graph=nx.draw_networkx_edge_labels(Diagram_Graph, nx.spring_layout(Diagram_Graph))
-        plt.show()
-        return drawn_graph
+            if type(diagram[k][1]) is dict:
+                for m in diagram[k][1].keys():
+                    Diagram_Graph.add_edge(k,m)
+                    particle_labels[(k, m)]=diagram[k][1][m]
+        #print(Diagram_Graph.number_of_nodes())
+        pos=nx.spring_layout(Diagram_Graph)
+        #plt.figure()
+        #nx.draw(Diagram_Graph, pos)
+        #drawn_graph=nx.draw_networkx_edge_labels(Diagram_Graph, pos,edge_labels=particle_labels)
+        #plt.axis('off')
+        #plt.show(block=False)
+        #return drawn_graph
     def heuristic(self, diagram, propagator):
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 
         #this last part is a normalized proxy for the loop order
@@ -525,10 +532,12 @@ class FeynmanGenerator:
             m=self.propagators[propagator] #mass of the propagator
             starting_coupling_constant=1
             for node in diagram[1].keys():
-                starting_coupling_constant=starting_coupling_constant*diagram[1][node][0]
+                #print(starting_coupling_constant)
+                if diagram[1][node][0] != 0:
+                    starting_coupling_constant=starting_coupling_constant*vertexs[diagram[1][node][0]]
         #so I need count vertices to return a list of the form 
         #(count of vertexs, product of coupling constants, list of vertexs)
-            h=1/SA*(starting_coupling_constant*avg_constant)/pow(m,2)
+            h=1/SA*(float(starting_coupling_constant)*avg_constant)/pow(m,2)
             n_lines+=in_out_new_contribution
             in_out+=in_out_new_contribution
             h+= in_out/n_lines-1
@@ -551,10 +560,13 @@ class FeynmanGenerator:
                 m=self.propagators[propagator] #mass of the propagator
                 starting_coupling_constant=1
                 for node in diagram.keys():
-                    starting_coupling_constant=starting_coupling_constant*diagram[node][0]
+                    #print(starting_coupling_constant)
+                    if diagram[node][0] != 0:
+                        starting_coupling_constant=starting_coupling_constant*vertexs[diagram[node][0]]
         #so I need count vertices to return a list of the form 
         #(count of vertexs, product of coupling constants, list of vertexs)
-                h=1/SA*(starting_coupling_constant*avg_constant)/pow(m,2)
+#                print(["SA type ", type(SA), "\n starting type ", type(starting_coupling_constant), "\n avg type ", type(avg_constant)])        
+                h=1/SA*(float(starting_coupling_constant)*avg_constant)/pow(m,2)
                 n_lines+=in_out_new_contribution
                 in_out+=in_out_new_contribution
                 h+= in_out/n_lines-1

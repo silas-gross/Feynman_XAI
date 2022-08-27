@@ -92,15 +92,16 @@ class FeynmanSearch:
             else:
                 queue[c[2]]=[[c[0], c[1]]]
         hs=list(queue.keys())
-        htemp=max(hs)+10
+        htemp=None
         highest_priority=0
         for h in hs:
             ha=abs(h)
-            if ha<htemp:
+            if htemp is None or ha<htemp:
                 highest_priority=h
                 htemp=ha
         #highest_priority=min(hs)
         while len(queue)>0:
+            #print([queue, highest_priority])
             if len(queue[highest_priority])==0:
                 queue.pop(highest_priority)
                 hs=list(queue.keys())
@@ -114,10 +115,12 @@ class FeynmanSearch:
             deltasa=[]
             for d1 in diags:
                 deltasa.append(generator.CalculateScatteringAmplitude(d1))
+                #print("\n \n diagram is ", d1)
                 knew=d1.keys()
+                #print(knew)
                 for k in knew:
                     if not k in kold:
-                        good=self.ImposeConstraints(method, k, deltasa[-1],d1)
+                        good=self.ImposeConstraints(method, d1[k][0], deltasa[-1],d1)
                         if not good:
                             break
                         else:
@@ -144,7 +147,8 @@ class FeynmanSearch:
         diagrams=generator.diagrams
         correction=dict()
         for d in diagrams:
-            cs=generator.GenerateNextOrder(d[1])
+            #print(d)
+            cs=generator.GenerateNextOrder(d)
             c=sum([x[2] for x in cs])/len(cs)
             dh=hash(str(d))
             correction[dh]=c/d[2]

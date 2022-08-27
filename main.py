@@ -22,27 +22,35 @@ def LagrangianInput():
     mc=[]
     ni=0
     ccs=dict()
-    print("Enter the Lagrangian (real and complex scalars only): \n")
-    print("Give number of real scalar fields: ")
-    nr=int(input())
-    print("\n Give number of complex scalar fields: ")
-    nc=int(input())
-    for i in range(nr):
-        print("\n Give mass of real scalar field %d in GeV: ", (i+1))
-        mr.append(float(input()))
-    for i in range(nc):
-        print("\n Give mass of complex scalar field %d in GeV: ", (i+1))
-        mc.append(float(input()))
-    print("\n Give number of interaction terms in Lagrangian: ")
-    ni=int(input())
-    print("\n Give interaction terms with particles comma seperated. Use phi_i for real scalars, psi_i for complex")
-    print("\n For example a vertex with two real scalar fields and two particles of the same complex scalar would be \" phi_1 phi_2 psi_1 psi_2 \" ")
-    for i in range(ni):
-        print("\n Give particles in interaction term %d seperated by commas.", (i+1))
-        v=str(input())
-        print("\n Give value of coupling constant: ")
-        cc=float(input())
-        ccs[v]=cc
+    #print("Enter the Lagrangian (real and complex scalars only): \n")
+    #print("Give number of real scalar fields: ")
+    #nr=int(input())
+    nr=1
+    #print("\n Give number of complex scalar fields: ")
+    #nc=int(input())
+    nc=1
+    mr=[1]
+    #for i in range(nr):
+     #   print("\n Give mass of real scalar field %d in GeV: ", (i+1))
+      #  mr.append(float(input()))
+    #for i in range(nc):
+     #   print("\n Give mass of complex scalar field %d in GeV: ", (i+1))
+     #   mc.append(float(input()))
+    mc=[1]
+    #print("\n Give number of interaction terms in Lagrangian: ")
+    #ni=int(input())
+    ni=1
+    #print("\n Give interaction terms with particles comma seperated. Use phi_i for real scalars, psi_i for complex")
+    #print("\n For example a vertex with two real scalar fields and two particles of the same complex scalar would be \" phi_1, phi_2, psi_1, psi_2 \" ")
+    #for i in range(ni):
+    #    print("\n Give particles in interaction term %d seperated by commas.", (i+1))
+    #    v=str(input())
+    #    print("\n Give value of coupling constant: ")
+    #    cc=float(input())
+     #   ccs[v]=cc
+    v="phi_1, phi_1, psi_1, psi_1"
+    cc=5.5
+    ccs[v]=cc
     particles=dict()
     for i in range(nr):
         pname="phi_"+str(i+1)
