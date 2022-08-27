@@ -3,7 +3,7 @@
 #The hash then should be put in a map with a cost function to improve A* search
 from math import comb
 from copy import deepcopy
-from scipy import integrate
+import sympy as smb
 from random import choice
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -353,7 +353,8 @@ class FeynmanGenerator:
         return l
     def ImposeZeroExternalMomentum(self, diagram):
         #this is the entry point of the CSP to get free parameters to integrate over and external contrivutions
-        #this enforces the delta functions that show up at every vertex
+        #this enforces the delta functions that show up at every vertex,
+        #nned to change to use jus
         momentum=dict()
         vertices_momenta=list()
         ps=self.propagators
@@ -435,6 +436,7 @@ class FeynmanGenerator:
                 all_vertices_are_correct=True
                 break
         integrand=list()
+        n_var=0
         for m in momentum.keys():
             if "out" in str(m):
                 continue
@@ -449,19 +451,22 @@ class FeynmanGenerator:
                     add_param=int(p_parts[-1])
                     integrand.append([free_params, add_param, ps[momentum[m][0]]])
                 else:
-                    fp=p.replace("free", '')
+                    n_var+=1
+                    var_name="free_"+str(n_var)
+                    fp=p.replace("free", var_name)
                     integrand.append([[fp],0, ps[momentum[m][0]]])
             else:
                 part=momentum[m][0]
                 external_contribution=external_contribution*(-1)/pow(ps[part], 2)
         return [integrand, external_contribution]
-    def Integrand_propagator(self, xs, xadd, m):
+    #need to reconstruct for sympy 
+    #def Integrand(self, xs, xadd, m):
         x=sum(xs)
         return -1/(pow(x+xadd,2) +pow(m,2))
-    def IntegrandProduct(self, *variables):
+   # def IntegrandProduct(self, *variables):
         I=1
         for i in range(len(variables)-2):
-            I=I*self.Integrand(variables[i], variables[-1])
+            I=I*self.Integrand(variables[i], variables[-2], variables[-1])
         return I
     def CalculateScatteringAmplitude(self, diagram):
         #this method takes in a diagram in the graph form 
@@ -475,14 +480,13 @@ class FeynmanGenerator:
         loop=self.CalculateLoopOrder(diagram)
         #now I need to digest the integrands as they are non-trivial
         #have loop_order many variables to integrate over
-        bounds=[[0, self.cutoff]*max(loop, 1)]
+        bounds=[[0, self.cutoff]*max(int(loop), 1)]
         #this has given n many copies of the bound
         if loop>0:
             #if not integrands[0][0]==['']:
+            print(integrands)
             a,b=[integrands[i][1] for i in range(len(integrands))],[integrands[i][2] for i in range(len(integrands))]
-           #     print(integrands)
-            #print([integrands[i][0] for i in range(len(integrands))])
-            sa=sa*integrate.nquad(self.IntegrandProduct, bounds, args=(a,b))    
+           #integrate using sympy then give the proper value of the integral
             print(sa)
         #for i in integrands:
          #   p=lambda x,a: -1/(2*pi*pi*(pow(x,2)+pow(a,2)))
