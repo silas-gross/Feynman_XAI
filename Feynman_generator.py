@@ -455,13 +455,13 @@ class FeynmanGenerator:
                 part=momentum[m][0]
                 external_contribution=external_contribution*(-1)/pow(ps[part], 2)
         return [integrand, external_contribution]
-    def Integrand(self, xs, x_add, m):
+    def Integrand_propagator(self, xs, xadd, m):
         x=sum(xs)
-        return -1/(pow(x +x_add,2) +pow(m,2))
-    def IntegrandProduct(self, variables, integrands_args):
+        return -1/(pow(x+xadd,2) +pow(m,2))
+    def IntegrandProduct(self, *variables):
         I=1
-        for i in range(len(variables)):
-            I=I*self.Integrand(variables[i], integrands_args[1][i], integrands_args[2][i])
+        for i in range(len(variables)-2):
+            I=I*self.Integrand(variables[i], variables[-1])
         return I
     def CalculateScatteringAmplitude(self, diagram):
         #this method takes in a diagram in the graph form 
@@ -469,22 +469,25 @@ class FeynmanGenerator:
         sa=1
         pi=3.14159
         integrands, external_contribution=self.ImposeZeroExternalMomentum(diagram)
+     #integrand is a list corresponding to an element to integrate for each vertex
+     #[free variables depends on, addition to those as just a number, propagator (unused--+)]
         sa=external_contribution
         loop=self.CalculateLoopOrder(diagram)
         #now I need to digest the integrands as they are non-trivial
         #have loop_order many variables to integrate over
-        bounds=[[0, self.cutoff]]
+        bounds=[[0, self.cutoff]*max(loop, 1)]
         #this has given n many copies of the bound
-        #if loop>0:
-         #   if not integrands[0][0]==['']:
-          #      int_arg=[[integrands[i][1] for i in range(len(integrands))],[integrands[i][2] for i in range(len(integrands))]]
+        if loop>0:
+            #if not integrands[0][0]==['']:
+            a,b=[integrands[i][1] for i in range(len(integrands))],[integrands[i][2] for i in range(len(integrands))]
            #     print(integrands)
             #print([integrands[i][0] for i in range(len(integrands))])
-            #    sa=sa*integrate.nquad(self.IntegrandProduct, bounds, args=(int_arg))    #in an effort to get something out faster, drop the delta function requirement
-        for i in integrands:
-            p=lambda x,a: -1/(2*pi*pi*(pow(x,2)+pow(a,2)))
-            y, e=integrate.quad(p, 0, self.cutoff, args=(i[2],))
-            sa=sa*y
+            sa=sa*integrate.nquad(self.IntegrandProduct, bounds, args=(a,b))    
+            print(sa)
+        #for i in integrands:
+         #   p=lambda x,a: -1/(2*pi*pi*(pow(x,2)+pow(a,2)))
+          #  y, e=integrate.quad(p, 0, self.cutoff, args=(i[2],))
+           # sa=sa*y
         return sa
     def DrawDiagram(self, diagram):
         #this just takes in the diagram and draws the graph from the dictionary

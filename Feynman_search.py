@@ -53,6 +53,7 @@ class FeynmanSearch:
             else:
                 self.ccs[verts]+=dcc
                 self.cutoff+=-dco
+                print(self.cutoff)
                 return True
 
 
@@ -60,6 +61,7 @@ class FeynmanSearch:
         #Willsonian here would be beta function which imposes that 1/cc-1/new cc=change in SA*log(1/cutoff)
         if method=="WR":
             co=self.cutoff
+            print(co)
             vs=list()
             for d in diagram.keys():
                 vs.append(diagram[d][0])
