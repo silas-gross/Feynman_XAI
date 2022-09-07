@@ -460,38 +460,46 @@ class FeynmanGenerator:
                 external_contribution=external_contribution*(-1)/pow(ps[part], 2)
         return [integrand, external_contribution]
     #need to reconstruct for sympy 
-    #def Integrand(self, xs, xadd, m):
+    def Integrand(self, xs, xadd, m):
+        print(xs, "\n", type(xs[0]))
         x=sum(xs)
         return -1/(pow(x+xadd,2) +pow(m,2))
-   # def IntegrandProduct(self, *variables):
-        I=1
-        for i in range(len(variables)-2):
-            I=I*self.Integrand(variables[i], variables[-2], variables[-1])
-        return I
     def CalculateScatteringAmplitude(self, diagram):
         #this method takes in a diagram in the graph form 
         #then it passes that diagram off to a CSP approach to fix the non-free parameters
         sa=1
         pi=3.14159
-        integrands, external_contribution=self.ImposeZeroExternalMomentum(diagram)
+        variable_relations, external_contribution=self.ImposeZeroExternalMomentum(diagram)
      #integrand is a list corresponding to an element to integrate for each vertex
      #[free variables depends on, addition to those as just a number, propagator (unused--+)]
-        sa=external_contribution
+        if external_contribution !=0:
+            sa=external_contribution
         loop=self.CalculateLoopOrder(diagram)
         #now I need to digest the integrands as they are non-trivial
         #have loop_order many variables to integrate over
         bounds=[[0, self.cutoff]*max(int(loop), 1)]
         #this has given n many copies of the bound
         if loop>0:
-            #if not integrands[0][0]==['']:
-            print(integrands)
-            a,b=[integrands[i][1] for i in range(len(integrands))],[integrands[i][2] for i in range(len(integrands))]
+            print(variable_relations)
+            variables=[smb.symbols(x[0][0]) for x in variable_relations if "+" not in str(x[0][0])]
+            #now I just need to put the symbols in place of the strings from variable relations
+            for v in variable_relations:
+                print(v[0])
+                for st in range(len(v[0])):
+                    for vs in variables:
+                        if v[0][st]==vs.name:
+                            v[0][st]=vs
+            integrands=[self.Integrand(v[0], v[1], v[2]) for v in variable_relations]
+            integrand=integrands[0]
+            for i in range(len(integrands)):
+                integrand+=integrands[i]
+            bounds=[(v, 0, self.cutoff) for v in variables]
+            #right now the bounds are coming in as a list, but I think I need to flatten it to just read in as (x, 0, cutoff), (y,0, cutoff)...
+            # I am not sure how to do that
+            integral=smb.integrate(integrand, bounds)
+            
+            sa=sa*integral
            #integrate using sympy then give the proper value of the integral
-            print(sa)
-        #for i in integrands:
-         #   p=lambda x,a: -1/(2*pi*pi*(pow(x,2)+pow(a,2)))
-          #  y, e=integrate.quad(p, 0, self.cutoff, args=(i[2],))
-           # sa=sa*y
         return sa
     def DrawDiagram(self, diagram):
         #this just takes in the diagram and draws the graph from the dictionary
