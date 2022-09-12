@@ -28,9 +28,9 @@ class FeynmanSearch:
         self.cutoff=4*ci
     def SynthConstraint(self, co, dco, dcc, vert, deltasa):
         lhs=co*deltasa
-        rhs=(co-dco)*dcc*(self.ccs[vert]+dco) #This line had sc for dcc, unclear what Was meant
-        
-        if abs(lhs-rhs) < lhs/abs(dco-dcc):
+        rhs=(co-dco)*dcc*(self.ccs[vert]+dcc) #This line had sc for dcc, unclear what Was meant
+        #print(rhs)
+        if abs(lhs-rhs) < lhs:
             return True
         else:
             return False
@@ -38,22 +38,32 @@ class FeynmanSearch:
         #for SC/RC the constriaint is that 
         #new cc = cc -change in SA *cuttoff/change in cutoff
         if method=="SC":
-            dco=0.99*self.cutoff*deltasa/self.ccs[verts]
+            scale=1
+            if verts not in self.ccs.keys():
+                return False
+            dco=0.99*self.cutoff
+            print("initial change to cutoff: ", dco)
             dcc=0
             good_change=False
             while good_change==False:
-                dcc=-self.cutoff*deltasa/dco
+                dcc=-1*scale*self.cutoff*deltasa/(dco)
                 good_change=self.SynthConstraint(self.cutoff, dco, dcc, verts, deltasa)
+                #print(self.cutoff)
                 if good_change:
                     break
                 else:
-                    dco+=-0.05*dco
+                    dco+=-0.01*dco
+                    if abs(dcc) >abs(self.ccs[verts]):
+                        scale= self.ccs[verts]/dcc
+                     #   break
+                    #    print("bad change", dco,dcc)
             if self.ccs[verts]+dcc<=0 or self.cutoff-dco<=0:
+                print("bad change, issue is verts? ", self.ccs[verts]+dcc, "or cutoff?", self.cutoff-dco)
                 return False
             else:
                 self.ccs[verts]+=dcc
                 self.cutoff+=-dco
-                print(self.cutoff)
+                print("changed cuttoff: ", self.cutoff)
                 return True
 
 
@@ -101,9 +111,8 @@ class FeynmanSearch:
             if htemp is None or ha<htemp:
                 highest_priority=h
                 htemp=ha
-        #highest_priority=min(hs)
+        #print(highest_priority)
         while len(queue)>0:
-            #print([queue, highest_priority])
             if len(queue[highest_priority])==0:
                 queue.pop(highest_priority)
                 hs=list(queue.keys())
@@ -117,16 +126,20 @@ class FeynmanSearch:
             deltasa=[]
             for d1 in diags:
                 deltasa.append(generator.CalculateScatteringAmplitude(d1))
-                #print("\n \n diagram is ", d1)
+                #print("diagram change is ", deltasa[-1])
                 knew=d1.keys()
                 #print(knew)
                 for k in knew:
                     if not k in kold:
                         good=self.ImposeConstraints(method, d1[k][0], deltasa[-1],d1)
                         if not good:
+                            #print("going to do a break", len(queue))
                             break
                         else:
+                            print(self.cutoff)
                             generator.UpdateCutoffandVertex(self.cutoff, self.css)
+                    else:
+                        continue
             sa=sum(deltasa)
             scattering_amp+=sa
             #print(highest_priority)

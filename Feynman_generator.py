@@ -98,8 +98,6 @@ class FeynmanGenerator:
             diagram=diagram_a[1]
         elif type(diagram_a) is dict:
             diagram=diagram_a
-        else:
-            print(type(diagram_a))
         for n in diagram.keys():
             for m in diagram[n][1].keys():
                 leg=str(n)+":"+str(m)
@@ -441,6 +439,8 @@ class FeynmanGenerator:
             if "out" in str(m):
                 continue
             p=momentum[m][1]
+            if p==0:
+                continue
             if "free" in str(p):
                 if "+" in str(p):
                     p_parts=p.split("+")
@@ -461,7 +461,6 @@ class FeynmanGenerator:
         return [integrand, external_contribution]
     #need to reconstruct for sympy 
     def Integrand(self, xs, xadd, m):
-        print(xs, "\n", type(xs[0]))
         x=sum(xs)
         return -1/(pow(x+xadd,2) +pow(m,2))
     def CalculateScatteringAmplitude(self, diagram):
@@ -480,11 +479,9 @@ class FeynmanGenerator:
         bounds=[[0, self.cutoff]*max(int(loop), 1)]
         #this has given n many copies of the bound
         if loop>0:
-            print(variable_relations)
             variables=[smb.symbols(x[0][0]) for x in variable_relations if "+" not in str(x[0][0])]
             #now I just need to put the symbols in place of the strings from variable relations
             for v in variable_relations:
-                print(v[0])
                 for st in range(len(v[0])):
                     for vs in variables:
                         if v[0][st]==vs.name:
@@ -493,13 +490,14 @@ class FeynmanGenerator:
             integrand=integrands[0]
             for i in range(len(integrands)):
                 integrand+=integrands[i]
-            bounds=[(v, 0, self.cutoff) for v in variables]
+            bounds=[(v, 0, float(self.cutoff)) for v in variables]
             #right now the bounds are coming in as a list, but I think I need to flatten it to just read in as (x, 0, cutoff), (y,0, cutoff)...
             # I am not sure how to do that
-            integral=smb.integrate(integrand, bounds)
+            integral=smb.integrate(integrand, *bounds)
             
             sa=sa*integral
            #integrate using sympy then give the proper value of the integral
+        print(sa)
         return sa
     def DrawDiagram(self, diagram):
         #this just takes in the diagram and draws the graph from the dictionary
@@ -512,7 +510,6 @@ class FeynmanGenerator:
                 for m in diagram[k][1].keys():
                     Diagram_Graph.add_edge(k,m)
                     particle_labels[(k, m)]=diagram[k][1][m]
-        #print(Diagram_Graph.number_of_nodes())
         pos=nx.spring_layout(Diagram_Graph)
         #plt.figure()
         #nx.draw(Diagram_Graph, pos)
@@ -547,7 +544,6 @@ class FeynmanGenerator:
             m=self.propagators[propagator] #mass of the propagator
             starting_coupling_constant=1
             for node in diagram[1].keys():
-                #print(starting_coupling_constant)
                 if diagram[1][node][0] != 0:
                     starting_coupling_constant=starting_coupling_constant*vertexs[diagram[1][node][0]]
         #so I need count vertices to return a list of the form 
@@ -575,7 +571,6 @@ class FeynmanGenerator:
                 m=self.propagators[propagator] #mass of the propagator
                 starting_coupling_constant=1
                 for node in diagram.keys():
-                    #print(starting_coupling_constant)
                     if diagram[node][0] != 0:
                         starting_coupling_constant=starting_coupling_constant*vertexs[diagram[node][0]]
         #so I need count vertices to return a list of the form 

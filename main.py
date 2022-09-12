@@ -29,14 +29,14 @@ def LagrangianInput():
     #print("\n Give number of complex scalar fields: ")
     #nc=int(input())
     nc=1
-    mr=[1]
+    mr=[1.25]
     #for i in range(nr):
      #   print("\n Give mass of real scalar field %d in GeV: ", (i+1))
       #  mr.append(float(input()))
     #for i in range(nc):
      #   print("\n Give mass of complex scalar field %d in GeV: ", (i+1))
      #   mc.append(float(input()))
-    mc=[1]
+    mc=[125.6]
     #print("\n Give number of interaction terms in Lagrangian: ")
     #ni=int(input())
     ni=1
@@ -48,8 +48,8 @@ def LagrangianInput():
     #    print("\n Give value of coupling constant: ")
     #    cc=float(input())
      #   ccs[v]=cc
-    v="phi_1, phi_1, psi_1, psi_1"
-    cc=5.5
+    v="phi_1, psi_1, psi_1"
+    cc=1.25
     ccs[v]=cc
     particles=dict()
     for i in range(nr):
