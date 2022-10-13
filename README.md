@@ -49,3 +49,8 @@ Also it is not clear from my reading the exact correlation between energy model 
 #Usage
 Usage is fairly simple, run python3 main.py and it will pop open a window to enter the lagrangian, and then proceed to run the search, outputing the found UV cutoff and scattering amplitudes when finished running, as well as a feynman diagram of the inital vertex and the final diagram  
 
+#Data structure
+So the main data structure for this project is an tuple that describes the state of a feynman diagram, including the number of particles, number of verticies, number of outgoing particles, scattering amplitude and a graph description of the particles. 
+So, in form that is 
+
+{(string form of incoming to outgoing particles, incoming particles, outgoing particles), set of vertexes, (scattering amplitude numerical, scattering amplitude representational), ingoing-outgoing particles, loop order} //need to check this, I think its not quite right
