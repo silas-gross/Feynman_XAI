@@ -1,8 +1,6 @@
-#This file is to perform the main searching over the Feynman diagrams, LAO* approach is goal
+#This file is to perform the main searching over the Feynman diagrams, A* approach to search for most productive branches
 #CSP is also to be put-into this search, fill back constraints to cut methods
 from Feynman_generator  import FeynmanGenerator
-#from Renormalization    import Willson
-#from Renormalization    import Sythetic
 import math
 import matplotlib.pyplot as plt
 
@@ -27,18 +25,22 @@ class FeynmanSearch:
         ci=sum([m*m for m in self.masses])
         self.cutoff=4*ci
     def SynthConstraint(self, co, dco, dcc, vert, deltasa):
-        lhs=co*deltasa
-        rhs=(co-dco)*dcc*(self.ccs[vert]+dcc) #This line had sc for dcc, unclear what Was meant
+        #this function makes sure that all of the changes stay manifestly positive
+        lhs=co/dco
+        rhs=self.ccs[vert]/deltasa
         #print(rhs)
-        if abs(lhs-rhs) < lhs:
+        if lhs-rhs < lhs:
             return True
         else:
             return False
     def ImposeConstraints(self, method, verts, deltasa, diagram):
         #for SC/RC the constriaint is that 
         #new cc = cc -change in SA *cuttoff/change in cutoff
+        #needs a mass change as well I think
         if method=="SC":
-            scale=1
+            scale=0.01 
+            #this is introduced to allow for better scaning over phase space
+            #prevents runaway checks of nonsensicial changes to coulping constants
             if verts not in self.ccs.keys():
                 return False
             dco=0.99*self.cutoff
@@ -94,7 +96,6 @@ class FeynmanSearch:
         d=di[1]
         generator.DrawDiagram(d)
         plt.show()
-        at_goal=False
         children=generator.GenerateNextOrder(d)
         queue=dict()
         scattering_amp=generator.CalculateScatteringAmplitude(d)
@@ -144,7 +145,6 @@ class FeynmanSearch:
             scattering_amp+=sa
             #print(highest_priority)
             if sa<abs(highest_priority):
-                at_goal=True
                 return [cd[0], scattering_amp]
             else:
                 child=generator.GenerateNextOrder(cd[0])
@@ -169,7 +169,7 @@ class FeynmanSearch:
             correction[dh]=c/d[2]
         diagram_to_use=diagrams[0]
         for d in diagrams:
-            if correction[hash(str(d))]<=correction[hash(str(diagram_to_use))]:
+            if correction[hash(str(d))]>=correction[hash(str(diagram_to_use))]:
                 diagram_to_use=d
             else:
                 continue

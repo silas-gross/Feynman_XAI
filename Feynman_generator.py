@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 
 class FeynmanGenerator:
     def __init__(self, lagrangian, cutoff, looporder=1):
+        #by default, evaluate the diagrams to loop order 1 
+        #each time the generator is called, loop order increases by 1
         self.order=looporder
         self.cutoff=cutoff
         self.diagram_list=[]
@@ -18,19 +20,31 @@ class FeynmanGenerator:
         self.diagrams=self.GenerateDiagrams()
 #        self.diagram_list=list() #list of the hashs of diagrams
     def UpdateCutoffandVertex(self, new_cutoff, newccs):
+        #Feynman_Search class updates the coupling constant and vertices 
+        #this is the renormalization, which then changes the  integrals for the scattering amplitude
+        #RG flow equations mean that the amplitude will be independent of renomalization
+        #however, the cutoff value will potentially factor into the calculation
+        #and the renormalization parameters are required in order to perform integrals
         self.cutoff=new_cutoff
         self.vertices=newccs
     def GenerateDiagrams(self):
         #this will generate diagrams up to loop order given 
-        #if loop order=-1, generate until contribution to scattering amplitude is diminneshed by a power of lambda 
+        #if loop order=-1, generate until contribution to scattering amplitude is diminished by a power of the cutoff
+        #callin loop order=-1 will cause a run time on order of a day 
+        
         #datastructure for a diagram needs to be 
-        #{(string form of incoming to outgoing particles, incoming particles, outgoing particles), set of vertexes, (scattering amplitude numerical, scattering amplitude representational), ingoing-outgoing particles, loop order}
-        #this will generate multiple diagrams filling the same set of charracteristics, thus, hash and every incidcdnce of a hash double used, add to the symmetry factor
+        #{(string form of incoming to outgoing particles, incoming particles, outgoing particles),
+        #set of vertexes, scattering amplitude numerical,ingoing-outgoing particles, loop order}
+        #this will generate multiple diagrams filling the same set of charracteristics,
+        #thus, hash the diagram, as each component does not uniquely determine the diagram
+        #rather it is the total diagram
         scattering_amplitude=0
+        #scattering_amplitude is calculated later 
+        #to calculate here would be too slow
+        #rather, it is better to call as needed
         diagrams=list()
         hash_diagrams=self.diagram_list
         vs=self.vertices
-        ps=self.propagators
         for v in vs.keys(): #this has all of the single vertex configuration diagrams
             parts=v.split(", ");
             unique_parts=dict()
@@ -76,14 +90,15 @@ class FeynmanGenerator:
                         out_node="out_"+str(j)
                         out[out_node]=parts[j]
                         out_cons[out_node]=[0, {'1':parts[j]}]
+                        #connections between the out vertex and the node
+                        #stucture of the dictionary node:(vertex contribution of this node, {connected node: connector})
                     out_cons['1']=[v, out]
                     r=2*k-n
-                    d=[[sform, l, rparts], out_cons, vs[v]/sf,r , 0]
-                    #I need to go through all of this and sort out what I need the diagram to have and where
+                    d=[[sform, l, rparts], out_cons, vs[v]/sf,r , scattering_amplitude]
                     if not hash(str([*d])) in hash_diagrams:
                         diagrams.append(d)
                         hash_diagrams.append(hash(str([*d])))
-        #now I need to generate diagrams up to loop order l 
+        #now need to generate diagrams up to loop order L 
         # this is calculated with L=I-V+1
         # where I is the number of internal lines and V is number of vertices
         #first we need to set the current value of the scattering amplitude of each in state versus outstate
@@ -123,7 +138,6 @@ class FeynmanGenerator:
         #that is a good proxy to the scattering amplitude with out calcuating
         #so this is what the "expand children" will be 
         vs=self.vertices
-        ps=self.propagators
         #just take in the graph form of the diagram
         out_diagrams=list()
         external_particles=list()
@@ -217,11 +231,13 @@ class FeynmanGenerator:
 
     def RecombineExteriors(self, diagram):
         #recombines exterior propagators
+        #this keeps the number of incomming and outgoing particles stable
+        #and thus allows us to look at the same process post selection
+        #selection is done at vertex level, performed in Feynman_search
         k=[]
         for x in diagram.keys():
             if "out" in str(x):
                 k.append(x)
-        found_recomb=False
         diagrams_out=list()
         dummy_diagram=deepcopy(diagram)
         d_hash=list()
@@ -233,7 +249,6 @@ class FeynmanGenerator:
                     if not k[i] in dummy_diagram.keys() or not k[j] in dummy_diagram.keys():
                         continue
                     if  list(dummy_diagram[k[i]][1].values())[0]==list(dummy_diagram[k[j]][1].values())[0]:
-                        found_recomb=True
                         c=list(dummy_diagram[k[j]][1].keys())[0]
                         b=list(dummy_diagram[k[i]][1].keys())[0]
                         p=list(dummy_diagram[k[i]][1].values())[0]
@@ -386,7 +401,6 @@ class FeynmanGenerator:
             #now we should test assigning values to all but looporder many free partices
                 verts.append(vert)
             frees=list()
-            f=len(momentum) % max(loop_order, 1)
             if loop_order >0:
                 for i in range(int(loop_order)):
                     k=list(momentum.keys())
@@ -474,13 +488,16 @@ class FeynmanGenerator:
         if external_contribution !=0:
             sa=external_contribution
         loop=self.CalculateLoopOrder(diagram)
-        #now I need to digest the integrands as they are non-trivial
+        #Digest the integrands as they are non-trivial
         #have loop_order many variables to integrate over
         bounds=[[0, self.cutoff]*max(int(loop), 1)]
         #this has given n many copies of the bound
         if loop>0:
             variables=[smb.symbols(x[0][0]) for x in variable_relations if "+" not in str(x[0][0])]
-            #now I just need to put the symbols in place of the strings from variable relations
+            #Have created an appropriate set of sympy symbols objects
+            #loop below assigns each free variable to one of the symbols 
+            #then it goes through all of the integands and replaces free variables 
+            #this allows for full running of integrand
             for v in variable_relations:
                 for st in range(len(v[0])):
                     for vs in variables:
@@ -491,8 +508,8 @@ class FeynmanGenerator:
             for i in range(len(integrands)):
                 integrand+=integrands[i]
             bounds=[(v, 0, float(self.cutoff)) for v in variables]
-            #right now the bounds are coming in as a list, but I think I need to flatten it to just read in as (x, 0, cutoff), (y,0, cutoff)...
-            # I am not sure how to do that
+            #right now the bounds are coming in as a list, need to be flattened
+            #to just read in as (x, 0, cutoff), (y,0, cutoff)...
             integral=smb.integrate(integrand, *bounds)
             
             sa=sa*integral
@@ -521,6 +538,8 @@ class FeynmanGenerator:
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 
         #this last part is a normalized proxy for the loop order
         #all this is saying is really just contributions to scattering amplitude and order of divergence
+        #this requires only minimal algebaric calculations 
+        #no integrals need to be performed, helping to reduce computational overhead
         avg_constant=0
         total_vertexs=0
         h=1000
@@ -574,8 +593,7 @@ class FeynmanGenerator:
                     if diagram[node][0] != 0:
                         starting_coupling_constant=starting_coupling_constant*vertexs[diagram[node][0]]
         #so I need count vertices to return a list of the form 
-        #(count of vertexs, product of coupling constants, list of vertexs)
-#                print(["SA type ", type(SA), "\n starting type ", type(starting_coupling_constant), "\n avg type ", type(avg_constant)])        
+        #(count of vertexs, product of coupling constants, list of vertexs)        
                 h=1/SA*(float(starting_coupling_constant)*avg_constant)/pow(m,2)
                 n_lines+=in_out_new_contribution
                 in_out+=in_out_new_contribution
