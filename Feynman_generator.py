@@ -528,12 +528,12 @@ class FeynmanGenerator:
                     Diagram_Graph.add_edge(k,m)
                     particle_labels[(k, m)]=diagram[k][1][m]
         pos=nx.spring_layout(Diagram_Graph)
-        #plt.figure()
-        #nx.draw(Diagram_Graph, pos)
-        #drawn_graph=nx.draw_networkx_edge_labels(Diagram_Graph, pos,edge_labels=particle_labels)
-        #plt.axis('off')
-        #plt.show(block=False)
-        #return drawn_graph
+        plt.figure()
+        nx.draw(Diagram_Graph, pos)
+        drawn_graph=nx.draw_networkx_edge_labels(Diagram_Graph, pos,edge_labels=particle_labels)
+        plt.axis('off')
+        plt.show(block=False)
+        return drawn_graph
     def heuristic(self, diagram, propagator):
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 
         #this last part is a normalized proxy for the loop order

@@ -29,7 +29,7 @@ def LagrangianInput():
     #print("\n Give number of complex scalar fields: ")
     #nc=int(input())
     nc=1
-    mr=[1.25]
+    mr=[12.5]
     #for i in range(nr):
      #   print("\n Give mass of real scalar field %d in GeV: ", (i+1))
       #  mr.append(float(input()))
@@ -39,7 +39,7 @@ def LagrangianInput():
     mc=[125.6]
     #print("\n Give number of interaction terms in Lagrangian: ")
     #ni=int(input())
-    ni=1
+    ni=2
     #print("\n Give interaction terms with particles comma seperated. Use phi_i for real scalars, psi_i for complex")
     #print("\n For example a vertex with two real scalar fields and two particles of the same complex scalar would be \" phi_1, phi_2, psi_1, psi_2 \" ")
     #for i in range(ni):
@@ -48,9 +48,12 @@ def LagrangianInput():
     #    print("\n Give value of coupling constant: ")
     #    cc=float(input())
      #   ccs[v]=cc
-    v="phi_1, psi_1, psi_1"
-    cc=1.25
-    ccs[v]=cc
+   # v_1="phi_1, phi_1, phi_1, phi_1"
+   # cc_1=1.25
+    v_2="phi_1, psi_1, psi_1"
+    cc_2=1.5
+  #  ccs[v_1]=cc_1
+    ccs[v_2]=cc_2
     particles=dict()
     for i in range(nr):
         pname="phi_"+str(i+1)
@@ -77,6 +80,7 @@ L=LagrangianInput()
 print("\n Thank you for entering lagrangian, now we will expand all the vertex and tree level diagrams")
 print("\n This expansion chooses the n-point function that we will investigate for corrections")
 sc=FeynmanSearch(L)
+ic={c:L["coupling_constants"][c] for c in L["coupling_constants"]}
 vertexdiagrams=sc.diagram_base.diagrams
 graphdiagrams=dict()
 visual_diagrams=list()
@@ -91,6 +95,7 @@ for d in graphdiagrams.keys():
     visual_diagrams.append([graphdiagrams[d], str(d)])
     #this gives the diagram in a visulaizable form, can then call the Draw method
     #from Feynman generator
+
 diagram=sc.DecidePointFunction()
 print("\n The expansion will happen on the diagrams corresponding to traveling between states: " + diagram[0][0])
 [wilson_answer_diagram, wSA]=sc.PerformSearch("WR")
@@ -103,6 +108,7 @@ print("\n finished running, results have been output to file output.txt")
 outfile=open("output.txt", "w")
 outfile.write("Willson Renormalization answer \n \n")
 outfile.write("diagram graph: " +str(wilson_answer_diagram))
+outfile.write("\n initial coupling: "+str(ic))
 outfile.write("\n final scattering amplitude: " +str(wSA))
 outfile.write("\n vertex couplings: " +str(willson_couplings))
 outfile.write("\n cutoff momenta: "+ str(wco))
