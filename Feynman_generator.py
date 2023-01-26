@@ -476,12 +476,11 @@ class FeynmanGenerator:
     #need to reconstruct for sympy 
     def Integrand(self, xs, xadd, m):
         x=sum(xs)
-        return -1/(pow(x+xadd,2) +pow(m,2))
+        return -1/(pow(x+smb.S(xadd),2) +pow(m,2))
     def CalculateScatteringAmplitude(self, diagram):
         #this method takes in a diagram in the graph form 
         #then it passes that diagram off to a CSP approach to fix the non-free parameters
         sa=1
-        pi=3.14159
         variable_relations, external_contribution=self.ImposeZeroExternalMomentum(diagram)
      #integrand is a list corresponding to an element to integrate for each vertex
      #[free variables depends on, addition to those as just a number, propagator (unused--+)]
@@ -507,10 +506,10 @@ class FeynmanGenerator:
             integrand=integrands[0]
             for i in range(len(integrands)):
                 integrand+=integrands[i]
-            bounds=[(v, 0, float(self.cutoff)) for v in variables]
+            bounds=[(v, smb.S(0), smb.S(float(self.cutoff))) for v in variables]
             #right now the bounds are coming in as a list, need to be flattened
             #to just read in as (x, 0, cutoff), (y,0, cutoff)...
-            integral=smb.integrate(integrand, *bounds)
+            integral=smb.integrate(smb.sympify(integrand), *bounds)
             
             sa=sa*integral
            #integrate using sympy then give the proper value of the integral

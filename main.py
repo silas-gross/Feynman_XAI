@@ -2,6 +2,7 @@
 import tkinter as tk
 from Feynman_search import FeynmanSearch
 import time 
+import copy
 
 #top=tk.Tk()
 #def SubmitLagrangian():
@@ -48,11 +49,11 @@ def LagrangianInput():
     #    print("\n Give value of coupling constant: ")
     #    cc=float(input())
      #   ccs[v]=cc
-   # v_1="phi_1, phi_1, phi_1, phi_1"
-   # cc_1=1.25
+    #v_1="phi_1, phi_1, phi_1, phi_1"
+    #cc_1=1.25
     v_2="phi_1, psi_1, psi_1"
     cc_2=1.5
-  #  ccs[v_1]=cc_1
+    #ccs[v_1]=cc_1
     ccs[v_2]=cc_2
     particles=dict()
     for i in range(nr):
@@ -77,6 +78,7 @@ def LagrangianInput():
 print("Hello, welcome to renormalization! \n This program takes in a Lagrangian, searches for renormalization by expanding along lines in n-point functions of feynman diagrams \n Right now this is limited to scalar field theories, but will be modified to later allow for spinnors \n Then renormalization will be carried through using Willson's approach and synthetic coupling, showing equivielnce \n This equivilence is useful in connecting back to xAI and learning (see report) \n \n \n")
 print("\n To get started please follow the instructions to enter the Lagrangian")
 L=LagrangianInput()
+L_fixed=copy.deepcopy(L)
 print("\n Thank you for entering lagrangian, now we will expand all the vertex and tree level diagrams")
 print("\n This expansion chooses the n-point function that we will investigate for corrections")
 sc=FeynmanSearch(L)
@@ -101,6 +103,8 @@ print("\n The expansion will happen on the diagrams corresponding to traveling b
 [wilson_answer_diagram, wSA]=sc.PerformSearch("WR")
 willson_couplings=sc.css
 wco=sc.cutoff
+sc.l=L_fixed
+sc.ResetValues()
 [sc_answer_diagram, scSA]=sc.PerformSearch("SC")
 sc_couplings=sc.css
 sc_cutoff=sc.cutoff
