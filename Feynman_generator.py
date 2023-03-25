@@ -7,6 +7,7 @@ import sympy as smb
 from random import choice
 import networkx as nx
 import matplotlib.pyplot as plt
+import sys
 
 class FeynmanGenerator:
     def __init__(self, lagrangian, cutoff, looporder=1):
@@ -476,7 +477,7 @@ class FeynmanGenerator:
     #need to reconstruct for sympy 
     def Integrand(self, xs, xadd, m):
         x=sum(xs)
-        return -1/(pow(x+smb.S(xadd),2) +pow(m,2))
+        return (1/(pow(x+smb.S(xadd),2) +pow(smb.S(m),2)))
     def CalculateScatteringAmplitude(self, diagram):
         #this method takes in a diagram in the graph form 
         #then it passes that diagram off to a CSP approach to fix the non-free parameters
@@ -489,7 +490,7 @@ class FeynmanGenerator:
         loop=self.CalculateLoopOrder(diagram)
         #Digest the integrands as they are non-trivial
         #have loop_order many variables to integrate over
-        bounds=[[0, self.cutoff]*max(int(loop), 1)]
+        bounds=[[0.000001, self.cutoff]*max(int(loop), 1)]
         #this has given n many copies of the bound
         if loop>0:
             variables=[smb.symbols(x[0][0]) for x in variable_relations if "+" not in str(x[0][0])]
@@ -503,14 +504,25 @@ class FeynmanGenerator:
                         if v[0][st]==vs.name:
                             v[0][st]=vs
             integrands=[self.Integrand(v[0], v[1], v[2]) for v in variable_relations]
-            integrand=integrands[0]
+            pos=-1
+            integrand=1
+            x=smb.S('x')
+            y=smb.S('y')
+            expr_multiply=x*y
             for i in range(len(integrands)):
-                integrand+=integrands[i]
+        #        integrand+="*"
+                pos=-1 * pos
+                integrand=expr_multiply.subs([(x,integrand), (y,smb.sympify(integrands[i]))])
+                print(integrand)
             bounds=[(v, smb.S(0), smb.S(float(self.cutoff))) for v in variables]
             #right now the bounds are coming in as a list, need to be flattened
             #to just read in as (x, 0, cutoff), (y,0, cutoff)...
-            integral=smb.integrate(smb.sympify(integrand), *bounds)
-            
+            try:
+                integral=smb.integrate(pos*smb.sympify(integrand), *bounds)
+            except:
+                expr=smb.Integral(integrand, *bounds)
+                print(expr)
+                sys.exit("Bad integral")
             sa=sa*integral
            #integrate using sympy then give the proper value of the integral
         print(sa)
@@ -527,11 +539,11 @@ class FeynmanGenerator:
                     Diagram_Graph.add_edge(k,m)
                     particle_labels[(k, m)]=diagram[k][1][m]
         pos=nx.spring_layout(Diagram_Graph)
-        plt.figure()
+        #plt.figure()
         nx.draw(Diagram_Graph, pos)
         drawn_graph=nx.draw_networkx_edge_labels(Diagram_Graph, pos,edge_labels=particle_labels)
         plt.axis('off')
-        plt.show(block=False)
+        #plt.show(block=False)
         return drawn_graph
     def heuristic(self, diagram, propagator):
         #the heuristic here is given by h=1/SA*(average lambda)/m_prop^2+1-(in+out)/total lines 

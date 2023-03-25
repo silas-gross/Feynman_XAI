@@ -95,7 +95,7 @@ class FeynmanSearch:
         di=self.diagram_to_use
         d=di[1]
         generator.DrawDiagram(d)
-        plt.show()
+        #plt.show()
         children=generator.GenerateNextOrder(d)
         queue=dict()
         scattering_amp=generator.CalculateScatteringAmplitude(d)
@@ -175,5 +175,5 @@ class FeynmanSearch:
                 continue
         self.diagram_to_use=diagram_to_use
         generator.DrawDiagram(diagram_to_use[1])
-        plt.show()
+        #plt.show()
         return diagram_to_use
