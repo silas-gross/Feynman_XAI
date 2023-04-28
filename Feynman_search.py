@@ -3,7 +3,22 @@
 from Feynman_generator  import FeynmanGenerator
 import math
 import matplotlib.pyplot as plt
+import threading 
 
+class PlottingThread: #a seperate thread to do plotting of the diagrams to not hold up exectution 
+    def __init__(self, generator, diagram, name='plt_thread'):
+        self.diagram=diagram
+        self.gen=generator
+        super(PlottingThread, self).__init__(generator=generator, diagram=diagram, name=name)
+        self.start()
+    def run(self):
+        gen.DrawDiagram(diagram)
+        plt.show()
+    def update_diagram(self, d):
+        plt.clf()
+        self.diagram=d
+        gen.DrawDiagram(diagram)
+        plt.show()
 class FeynmanSearch:
     def __init__(self, Lagrangian):
         cutoff_initial=0
@@ -27,7 +42,7 @@ class FeynmanSearch:
     def SynthConstraint(self, co, dco, dcc, vert, deltasa):
         #this function makes sure that all of the changes stay manifestly positive
         lhs=co/dco
-        rhs=self.ccs[vert]/deltasa
+        rhs=(self.ccs[vert]-dcc)/deltasa
         #print(rhs)
         if lhs-rhs < lhs:
             return True
@@ -44,11 +59,11 @@ class FeynmanSearch:
             if verts not in self.ccs.keys():
                 return False
             dco=0.99*self.cutoff
-            print("initial change to cutoff: ", dco)
+            #print("initial change to cutoff: ", dco)
             dcc=0
             good_change=False
             while good_change==False:
-                dcc=-1*scale*self.cutoff*deltasa/(dco)
+                dcc=-1*self.cutoff*deltasa/(dco)
                 good_change=self.SynthConstraint(self.cutoff, dco, dcc, verts, deltasa)
                 #print(self.cutoff)
                 if good_change:
@@ -59,13 +74,13 @@ class FeynmanSearch:
                         scale= self.ccs[verts]/dcc
                      #   break
                     #    print("bad change", dco,dcc)
-            if self.ccs[verts]+dcc<=0 or self.cutoff-dco<=0:
+            if self.cutoff-dco<=0:#self.ccs[verts]+2*dcc<=0 or self.cutoff-dco<=0:
                 print("bad change, issue is verts? ", self.ccs[verts]+dcc, "or cutoff?", self.cutoff-dco)
                 return False
             else:
                 self.ccs[verts]+=dcc
                 self.cutoff+=-dco
-                print("changed cuttoff: ", self.cutoff)
+#                print("changed cuttoff: ", self.cutoff)
                 return True
 
 
@@ -94,7 +109,8 @@ class FeynmanSearch:
         generator=self.diagram_base
         di=self.diagram_to_use
         d=di[1]
-        generator.DrawDiagram(d)
+        kthread=PlottingThread(generator, d)
+        #generator.DrawDiagram(d)
         #plt.show()
         children=generator.GenerateNextOrder(d)
         queue=dict()
@@ -137,13 +153,14 @@ class FeynmanSearch:
                             #print("going to do a break", len(queue))
                             break
                         else:
-                            print(self.cutoff)
+                       #     print(self.cutoff)
                             generator.UpdateCutoffandVertex(self.cutoff, self.css)
                     else:
                         continue
+            print("Outside of the loop now")
             sa=sum(deltasa)
             scattering_amp+=sa
-            #print(highest_priority)
+            print(highest_priority)
             if sa<abs(highest_priority):
                 return [cd[0], scattering_amp]
             else:

@@ -523,12 +523,13 @@ class FeynmanGenerator:
              #   expr=smb.Integral(integrand, *bounds)
               #  print(expr)
                # sys.exit("Bad integral")
-            sa=sa*integral
+            sa=sa*integral.evalf()
            #integrate using sympy then give the proper value of the integral
         print(sa)
         return sa
     def DrawDiagram(self, diagram):
         #this just takes in the diagram and draws the graph from the dictionary
+        #plt.clear()
         Diagram_Graph=nx.Graph()
         particle_labels=dict()
         for k in diagram.keys():
