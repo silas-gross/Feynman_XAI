@@ -3,21 +3,22 @@
 from Feynman_generator  import FeynmanGenerator
 import math
 import matplotlib.pyplot as plt
-import threading 
+import threading as th
 
-class PlottingThread: #a seperate thread to do plotting of the diagrams to not hold up exectution 
+class PlottingThread(th.Thread): #a seperate thread to do plotting of the diagrams to not hold up exectution 
     def __init__(self, generator, diagram, name='plt_thread'):
+        th.Thread.__init__(self)
         self.diagram=diagram
         self.gen=generator
-        super(PlottingThread, self).__init__(generator=generator, diagram=diagram, name=name)
-        self.start()
+#        super(PlottingThread, self).__init__(name=name)
+#        self.start()
     def run(self):
-        gen.DrawDiagram(diagram)
+        self.gen.DrawDiagram(self.diagram)
         plt.show()
-    def update_diagram(self, d):
+    def UpdateDiagram(self, d):
         plt.clf()
         self.diagram=d
-        gen.DrawDiagram(diagram)
+        self.gen.DrawDiagram(self.diagram)
         plt.show()
 class FeynmanSearch:
     def __init__(self, Lagrangian):
@@ -88,7 +89,7 @@ class FeynmanSearch:
         #Willsonian here would be beta function which imposes that 1/cc-1/new cc=change in SA*log(1/cutoff)
         if method=="WR":
             co=self.cutoff
-            print(co)
+            #print(co)
             vs=list()
             for d in diagram.keys():
                 vs.append(diagram[d][0])
@@ -112,7 +113,10 @@ class FeynmanSearch:
         kthread=PlottingThread(generator, d)
         #generator.DrawDiagram(d)
         #plt.show()
+        kthread.start()
+        kthread.run()
         children=generator.GenerateNextOrder(d)
+#        print(children)
         queue=dict()
         scattering_amp=generator.CalculateScatteringAmplitude(d)
         for c in children:
@@ -120,6 +124,7 @@ class FeynmanSearch:
                 queue[c[2]].append([c[0], c[1]])
             else:
                 queue[c[2]]=[[c[0], c[1]]]
+        print(queue.keys())
         hs=list(queue.keys())
         htemp=None
         highest_priority=0
@@ -128,7 +133,7 @@ class FeynmanSearch:
             if htemp is None or ha<htemp:
                 highest_priority=h
                 htemp=ha
-        #print(highest_priority)
+        print("length of queue: "+str(len(queue)))
         while len(queue)>0:
             if len(queue[highest_priority])==0:
                 queue.pop(highest_priority)
@@ -139,9 +144,11 @@ class FeynmanSearch:
                 highest_priority=hs[0]
             cd=queue[highest_priority].pop()
             diags=generator.ExpandDiagram(cd[0], *cd[1])
+            kthread.UpdateDiagram(cd[0])
             kold=cd[0].keys()
             deltasa=[]
             for d1 in diags:
+#                print("number of veriticies: "+ str(generator.CountVertices(d1)))
                 deltasa.append(generator.CalculateScatteringAmplitude(d1))
                 #print("diagram change is ", deltasa[-1])
                 knew=d1.keys()
@@ -157,20 +164,25 @@ class FeynmanSearch:
                             generator.UpdateCutoffandVertex(self.cutoff, self.css)
                     else:
                         continue
-            print("Outside of the loop now")
+#            print("Outside of the loop now")
             sa=sum(deltasa)
             scattering_amp+=sa
-            print(highest_priority)
-            if sa<abs(highest_priority):
+ #           print(highest_priority)
+            if sa<abs(highest_priority)*0.2:
+                kthread.join()
                 return [cd[0], scattering_amp]
+                break
             else:
-                child=generator.GenerateNextOrder(cd[0])
-                for c in child:
-                    if c[2] in queue.keys():
-                        queue[c[2]].append([c[0], c[1]])
-                    else:
-                        queue[c[2]]=[[c[0], c[1]]]
-                        highest_priority=max(c[2], highest_priority)
+                children=generator.ExpandDiagram(cd[0], *cd[1])
+                for child in children:
+                    child=generator.GenerateNextOrder(cd[0])
+                    for c in child:
+                        print("number of veritices: "+ str(generator.CountVertices(c[0])))
+                        if c[2] in queue.keys():
+                            queue[c[2]].append([c[0], c[1]])
+                        else:
+                            queue[c[2]]=[[c[0], c[1]]]
+                            highest_priority=max(c[2], highest_priority)
 
                 
 

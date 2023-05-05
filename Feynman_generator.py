@@ -109,7 +109,9 @@ class FeynmanGenerator:
         #need to figure out if I actually want to use this, if so, need to update to match with current Expand
         #what this is doing is actulalay generating the queue
         legs=list()
+        prop_and_nodes=list()
         children=list()
+        diagram=dict() 
         if type(diagram_a) is list:
             diagram=diagram_a[1]
         elif type(diagram_a) is dict:
@@ -117,12 +119,25 @@ class FeynmanGenerator:
         for n in diagram.keys():
             for m in diagram[n][1].keys():
                 leg=str(n)+":"+str(m)
-                lgr=str(m)+":"+str(m)
+                lgr=str(m)+":"+str(n)
                 found=(leg in legs) or (lgr in legs)
                 if not found:
                     legs.append(leg)
-                    prop_and_nodes=[diagram[n][1][m], n, m]
-                    children.append(self.GenerateOutput(diagram_a, prop_and_nodes))
+                    prop_and_nodes.append([diagram[n][1][m], n, m])
+        for i in range(len(legs)):
+            leg=legs[i]
+            n=prop_and_nodes[i][1]
+            m=prop_and_nodes[i][2]
+            print(diagram)
+            child_diagrams=self.ExpandDiagram(diagram, leg, n, m) 
+            try:            
+                print(type(child_diagrams))
+                if len(child_diagrams) == 0:
+                    continue
+                for c in child_diagrams:
+                    children.append(self.GenerateOutput(c, prop_and_nodes[i]))
+            except:
+                children.append(self.GenerateOutput(diagram_a, prop_and_nodes[i]))
         return children
 
     def Same(self, particle_list_1, particle_list_2):
@@ -513,7 +528,7 @@ class FeynmanGenerator:
         #        integrand+="*"
                 pos=-1 * pos
                 integrand=expr_multiply.subs([(x,integrand), (y,smb.sympify(integrands[i]))])
-                print(integrand)
+                #print(integrand)
             bounds=[(v, smb.S(0), smb.S(float(self.cutoff))) for v in variables]
             #right now the bounds are coming in as a list, need to be flattened
             #to just read in as (x, 0, cutoff), (y,0, cutoff)...
@@ -525,7 +540,7 @@ class FeynmanGenerator:
                # sys.exit("Bad integral")
             sa=sa*integral.evalf()
            #integrate using sympy then give the proper value of the integral
-        print(sa)
+        #print(sa)
         return sa
     def DrawDiagram(self, diagram):
         #this just takes in the diagram and draws the graph from the dictionary

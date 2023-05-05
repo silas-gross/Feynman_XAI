@@ -1,17 +1,19 @@
 #this is the enerty point and contains the GUI
-#import tkinter as tk
+import tk as tk
 from Feynman_search import FeynmanSearch
 import time 
 import copy
 
 #top=tk.Tk()
-#def SubmitLagrangian():
-#
-#def EnterLagrangian():
- #   w=tk.Canvas(top, cursor="dot", height=600, width=500)
-  #  w.create_text(50, 250, text="Enter Lagrangian", font=('calibre', 15, 'bold'))
-  #  w.create_text(50, 300, text="Number of Real Scalar Fields: ", font=('calibre', 15))
-   # w.create_text(50, 350, text="Number of Complex Scalar Fields: ", font=('calibre', 15))
+def SubmitLagrangian():
+    pass
+def EnterLagrangian():
+    w=tk.Canvas(top, cursor="dot", height=600, width=500)
+    w.create_text(50, 250, text="Enter Lagrangian", font=('calibre', 15, 'bold'))
+    w.create_text(50, 300, text="Number of Real Scalar Fields: ", font=('calibre', 15))
+    w.create_text(50, 350, text="Number of Complex Scalar Fields: ", font=('calibre', 15))
+    w.pack()
+    w.Draw()
 
 #
 #def DrawFeynmanDiagram(diag, title=''):
@@ -51,10 +53,10 @@ def LagrangianInput():
     #    print("\n Give value of coupling constant: ")
     #    cc=float(input())
      #   ccs[v]=cc
-    v_1="phi_1, phi_1, phi_1, phi_1"
+    v_1="phi_1, phi_1, phi_1, phi_1, phi_1"
     cc_1=1.25
-    v_2="phi_1, psi_1, psi_1"
-    cc_2=1.5
+    v_2="phi_1, phi_1, psi_1, psi_1, psi_1, psi_1"
+    cc_2=5
     ccs[v_1]=cc_1
     ccs[v_2]=cc_2
     particles=dict()
