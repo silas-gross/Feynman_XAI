@@ -168,16 +168,16 @@ class FeynmanSearch:
             sa=sum(deltasa)
             scattering_amp+=sa
  #           print(highest_priority)
-            if sa<abs(highest_priority)*0.2:
+            if sa<abs(highest_priority):
                 kthread.join()
                 return [cd[0], scattering_amp]
                 break
             else:
                 children=generator.ExpandDiagram(cd[0], *cd[1])
-                for child in children:
-                    child=generator.GenerateNextOrder(cd[0])
+                for child_a in children:
+                    child=generator.GenerateNextOrder(child_a)
                     for c in child:
-                        print("number of veritices: "+ str(generator.CountVertices(c[0])))
+                        print("number of vertices: "+ str(generator.CountVertices(c[0])))
                         if c[2] in queue.keys():
                             queue[c[2]].append([c[0], c[1]])
                         else:

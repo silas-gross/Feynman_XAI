@@ -128,10 +128,10 @@ class FeynmanGenerator:
             leg=legs[i]
             n=prop_and_nodes[i][1]
             m=prop_and_nodes[i][2]
-            print(diagram)
+    #        print(diagram)
             child_diagrams=self.ExpandDiagram(diagram, leg, n, m) 
-            try:            
-                print(type(child_diagrams))
+            try:        #not sure why but this keeps giving an Nonetype object
+     #           print(type(child_diagrams))
                 if len(child_diagrams) == 0:
                     continue
                 for c in child_diagrams:
