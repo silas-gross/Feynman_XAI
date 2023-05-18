@@ -3,6 +3,7 @@ import tk as tk
 from Feynman_search import FeynmanSearch
 import time 
 import copy
+import threading
 
 #top=tk.Tk()
 def SubmitLagrangian():
@@ -53,11 +54,11 @@ def LagrangianInput():
     #    print("\n Give value of coupling constant: ")
     #    cc=float(input())
      #   ccs[v]=cc
-    v_1="phi_1, phi_1, phi_1, phi_1, phi_1"
+    v_1="phi_1, phi_1, phi_1, phi_1"
     cc_1=1.25
-    v_2="phi_1, phi_1, psi_1, psi_1, psi_1, psi_1"
+    v_2="phi_1, psi_1, psi_1"
     cc_2=5
-    ccs[v_1]=cc_1
+    #ccs[v_1]=cc_1
     ccs[v_2]=cc_2
     particles=dict()
     for i in range(nr):
@@ -101,13 +102,13 @@ for d in graphdiagrams.keys():
     visual_diagrams.append([graphdiagrams[d], str(d)])
     #this gives the diagram in a visulaizable form, can then call the Draw method
     #from Feynman generator
-
+    
 diagram=sc.DecidePointFunction()
 print("\n The expansion will happen on the diagrams corresponding to traveling between states: " + diagram[0][0])
 [wilson_answer_diagram, wSA]=sc.PerformSearch("WR")
 willson_couplings=sc.css
 wco=sc.cutoff
-sc.l=L_fixed
+sc.l=copy.deepcopy(L_fixed)
 sc.ResetValues()
 [sc_answer_diagram, scSA]=sc.PerformSearch("SC")
 sc_couplings=sc.css

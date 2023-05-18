@@ -113,8 +113,8 @@ class FeynmanSearch:
         kthread=PlottingThread(generator, d)
         #generator.DrawDiagram(d)
         #plt.show()
-        kthread.start()
-        kthread.run()
+#        kthread.start()
+#        kthread.run()
         children=generator.GenerateNextOrder(d)
 #        print(children)
         queue=dict()
@@ -143,8 +143,9 @@ class FeynmanSearch:
                 hs.sort(reverse=True)
                 highest_priority=hs[0]
             cd=queue[highest_priority].pop()
+            print("number of verticies in top diagram is " + str(generator.CountVertices(cd[0])))
             diags=generator.ExpandDiagram(cd[0], *cd[1])
-            kthread.UpdateDiagram(cd[0])
+        #    kthread.UpdateDiagram(cd[0])
             kold=cd[0].keys()
             deltasa=[]
             for d1 in diags:
@@ -169,7 +170,10 @@ class FeynmanSearch:
             scattering_amp+=sa
  #           print(highest_priority)
             if sa<abs(highest_priority):
-                kthread.join()
+                #kthread.UpdateDiagram(cd[0])
+                #kthread.join()
+                generator.DrawDiagram(cd[0])
+                plt.show()
                 return [cd[0], scattering_amp]
                 break
             else:
@@ -177,14 +181,16 @@ class FeynmanSearch:
                 for child_a in children:
                     child=generator.GenerateNextOrder(child_a)
                     for c in child:
-                        print("number of vertices: "+ str(generator.CountVertices(c[0])))
+#                        print("number of vertices: "+ str(generator.CountVertices(c[0])))
                         if c[2] in queue.keys():
                             queue[c[2]].append([c[0], c[1]])
                         else:
                             queue[c[2]]=[[c[0], c[1]]]
                             highest_priority=max(c[2], highest_priority)
-
-                
+                print("queue length is now " + str(len(queue)))
+        generator.DrawDiagram(d)
+        plt.show()
+        return[d, scattering_amp]        
 
     def DecidePointFunction(self):
         generator=self.diagram_base
@@ -204,5 +210,5 @@ class FeynmanSearch:
                 continue
         self.diagram_to_use=diagram_to_use
         generator.DrawDiagram(diagram_to_use[1])
-        #plt.show()
+        plt.show()
         return diagram_to_use
