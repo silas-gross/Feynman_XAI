@@ -19,6 +19,7 @@ class FeynmanGenerator:
         self.vertices=self.GetVertices(lagrangian)
         self.propagators=self.GetPropagators(lagrangian)
         self.diagrams=self.GenerateDiagrams()
+        self.exterior=[]
 #        self.diagram_list=list() #list of the hashs of diagrams
     def UpdateCutoffandVertex(self, new_cutoff, newccs):
         #Feynman_Search class updates the coupling constant and vertices 
@@ -82,9 +83,11 @@ class FeynmanGenerator:
                     rparts=parts.copy()
                     for p in l:
                         rparts.remove(p)
-                    sform=''.join(str(x) for x in l)
+                    sform=str()
+                    for x in l: sform+=' '+str(x)
                     sform+="->"
-                    sform=sform.join(str(x) for x in rparts)
+                    for x in rparts: sform+=' '+ str(x)
+                    if len(rparts) == 0: sform+=" vacuum"
                     out=dict() #this is the dictionary of the connections to the exterior
                     out_cons=dict()
                     for j in range(len(parts)):
@@ -156,15 +159,9 @@ class FeynmanGenerator:
         vs=self.vertices
         #just take in the graph form of the diagram
         out_diagrams=list()
-        external_particles=list()
+        external_particles=self.exterior
         diagrams_hash=self.diagram_list
-        n_out=0
-        for node in diagram.keys():
-            if "out" in str(node):
-                n_out+=1
-                external_particles.append(list(diagram[node][1].values())[0])
-        if second==True:
-            external_particles=old_ext
+        n_out=len(external_particles)
         for v in vs:
             particles_in_vertex=v.split(", ")
             if leg in particles_in_vertex:
@@ -176,9 +173,10 @@ class FeynmanGenerator:
                 connections[new_node]=leg
                 diagram_to_expand[from_node][1]=connections
                 diagram_to_expand[new_node]=[v,{to_node:leg, from_node:leg}]
-                del diagram_to_expand[to_node][1][from_node]
-                diagram_to_expand[to_node][1][new_node]=leg
+                if from_node in diagram_to_expand[to_node][1].keys(): del diagram_to_expand[to_node][1][from_node]
+#                diagram_to_expand[to_node][1][new_node]=leg
                 original_particle=0
+                if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): print(diagram_to_expand[new_node][1].values())
                 out_n=0
                 for r in particles_in_vertex:
                     if original_particle<2 and r==leg:
@@ -188,9 +186,13 @@ class FeynmanGenerator:
                         out_n+=1
                         node_name="out_"+str(out_n+n_out)
                         diagram_to_expand[new_node][1][node_name]=r
+                        print(diagram_to_expand[new_node][1].values())
                         diagram_to_expand[node_name]=[0,{new_node: r}]
+                        if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): print(diagram_to_expand[new_node][1].values())
                         new_external.append(r)
                 d=str(diagram_to_expand)
+                if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): print(diagram_to_expand[new_node][1].values())
+                if diagram_to_expand[new_node][0] not in vs: print(diagram_to_expand[new_node][0])
                 if not self.Same(new_external, external_particles):
                     if second==False:
                         for m in diagram_to_expand.keys():
@@ -242,6 +244,7 @@ class FeynmanGenerator:
                             else:
                                 out_diagrams.append(dd)
                                 diagrams_hash.append(d)
+                if len(out_diagrams) == 0: out_diagrams=[diagram]
                 return out_diagrams
 
 
@@ -629,7 +632,6 @@ class FeynmanGenerator:
             else:
                 return 100
         return h
-
              
         
         

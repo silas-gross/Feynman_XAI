@@ -211,4 +211,5 @@ class FeynmanSearch:
         self.diagram_to_use=diagram_to_use
         generator.DrawDiagram(diagram_to_use[1])
         plt.show()
+        generator.exterior=diagram_to_use[0][1]+diagram_to_use[0][2]
         return diagram_to_use
