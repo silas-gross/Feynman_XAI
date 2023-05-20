@@ -179,16 +179,16 @@ class FeynmanGenerator:
                 if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): print(diagram_to_expand[new_node][1].values())
                 out_n=0
                 for r in particles_in_vertex:
-                    if original_particle<2 and r==leg:
+                    if original_particle<3 and r==leg:
                         original_particle+=1
                         continue
                     else:
                         out_n+=1
                         node_name="out_"+str(out_n+n_out)
+                        print(diagram_to_expand[new_node][1])
                         diagram_to_expand[new_node][1][node_name]=r
-                        print(diagram_to_expand[new_node][1].values())
+                        print(diagram_to_expand[new_node][1])
                         diagram_to_expand[node_name]=[0,{new_node: r}]
-                        if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): print(diagram_to_expand[new_node][1].values())
                         new_external.append(r)
                 d=str(diagram_to_expand)
                 if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): print(diagram_to_expand[new_node][1].values())

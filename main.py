@@ -55,10 +55,10 @@ def LagrangianInput():
     #    cc=float(input())
      #   ccs[v]=cc
     v_1="phi_1, phi_1, phi_1, phi_1"
-    cc_1=1.25
+    cc_1=125
     v_2="phi_1, psi_1, psi_1"
     cc_2=5
-    #ccs[v_1]=cc_1
+   # ccs[v_1]=cc_1
     ccs[v_2]=cc_2
     particles=dict()
     for i in range(nr):
