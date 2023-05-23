@@ -166,59 +166,63 @@ class FeynmanGenerator:
             particles_in_vertex=v.split(", ")
             if leg in particles_in_vertex:
                 new_external=list()
+                remaining_particles=deepcopy(particles_in_vertex)
+                remaining_particles.remove(leg)
                 diagram_to_expand=deepcopy(diagram)
                 connections=diagram_to_expand[from_node][1]
-                try:
-                    del diagram_to_expand[from_node][1][to_node]
+                #the idea is that you want to insert another node in between the two 
+                if to_node in connections.keys(): 
+                    del connections[to_node]
                     del diagram_to_expand[to_node][1][from_node]
-                except:
-                    pass
-                new_node=len(diagram_to_expand.keys())+1
+                else:
+                    continue
+                    #if the two nodes are not connected, the expansion does not make sense
+                new_node=len(diagram_to_expand.keys())+1-n_out
+                #create a new node that will be connected to the "from" node by the original particle
                 connections[new_node]=leg
-                diagram_to_expand[from_node][1]=connections
-                diagram_to_expand[new_node]=[v,{from_node:leg}]
-                if from_node in diagram_to_expand[to_node][1].keys(): del diagram_to_expand[to_node][1][from_node]
-                diagram_to_expand[to_node][1][new_node]=leg
-                original_particle=0
-                out_n=0
-                for r in particles_in_vertex:
-                    if original_particle<2 and r==leg:
-                        original_particle+=1
-                        continue
-                    else:
-                        out_n+=1
-                        node_name="out_"+str(out_n+n_out)
-                        print(diagram_to_expand[new_node][1])
-                        diagram_to_expand[new_node][1][node_name]=r
-                        print(diagram_to_expand[new_node][1])
-                        diagram_to_expand[node_name]=[0,{new_node: r}]
-                        #new_external.append(r)
-                d=str(diagram_to_expand)
-          #      if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): continue
-                if diagram_to_expand[new_node][0] not in vs: continue
-                for x in diagram.keys():
-                    if "out_" in str(x):
-                        if len(diagram[x][1])==1:
-                            new_external.append(diagram[x][1].values())
-                if not self.Same(new_external, external_particles):
-                    if second==False:
-                        for m in diagram_to_expand.keys():
-                            for n in diagram_to_expand[m][1].keys():
-                                ds=self.ExpandDiagram(diagram_to_expand, diagram_to_expand[m][1][n], m, n, True, external_particles)
-                                for dss in ds:
-                                    nep=list()
-                                    for node in dss.keys():
-                                        if "out" in str(node):
-                                            nep.append(list(dss[node][1].values())[0])
-                                    if self.Same(nep,external_particles):
-                                        tdss=str([*dss])
-                                        if hash(tdss) in diagrams_hash:
-                                            continue
+                diagram_to_expand[new_node][1][from_node]=leg
+                #now we connect the new node to the old to node and allow for any new external particles
+                #need to account for having already connected one of the particles in the vertex back
+                #this is accomplished ysing the "remainging particles"
+                for p in remaining_particles:
+                    diagram_to_expand[new_node][1][to_node]=p
+                    diagram_to_expand[to_node][1][new_node]=p
+                    new_particles=deep_copy(remaining_particles)
+                    new_particles.remove(p)
+                    for p1 in new_particles:
+                        n_out+=1
+                        out_node="out_"+str(n_out)
+                        diagram_to_expand[new_node][1][out_node]=p1
+                        diagram_to_expand[out_node][1][new_node]=p1
+                    #now we have connected all the nodes together and need to work on combining 
+                    diagram_to_expand=self.ReadVertices(diagram_to_expand)
+                    #this just sets the 0 component of the nodes properly for easy comparison/to get diagram working correctly
+                    if diagram_to_expand[new_node][0] not in vs: continue #makes sure new vertex is valid
+
+                    for x in diagram.keys():
+                        if "out_" in str(x):
+                            if len(diagram[x][1])==1:
+                                new_external.append(diagram[x][1].values())
+                    if not self.Same(new_external, external_particles):
+                        #should try recombining exteriors here
+                        if second==False:
+                            for m in diagram_to_expand.keys():
+                                for n in diagram_to_expand[m][1].keys():
+                                    ds=self.ExpandDiagram(diagram_to_expand, diagram_to_expand[m][1][n], m, n, True, external_particles)
+                                    for dss in ds:
+                                        nep=list()
+                                        for node in dss.keys():
+                                            if "out" in str(node):
+                                                nep.append(list(dss[node][1].values())[0])
+                                        if self.Same(nep,external_particles):
+                                            tdss=str([*dss])
+                                            if hash(tdss) in diagrams_hash:
+                                                continue
+                                            else:
+                                                out_diagrams.append(dss)
+                                                diagrams_hash.append(tdss)
                                         else:
-                                            out_diagrams.append(dss)
-                                            diagrams_hash.append(tdss)
-                                    else:
-                                        continue
+                                            continue
 
                 if hash(d) in diagrams_hash:
                     continue
@@ -291,7 +295,14 @@ class FeynmanGenerator:
                             d_hash.append(d)
         return diagrams_out
 
-
+    def ReadVertices(self, diagram):
+        for v in diagram.keys():
+            legs=v[1].values()
+            p=''
+            for l in legs:
+                p+=str(l)
+            v[0]=p
+        return diagram
     def GenerateOutput(self, diagram, prop_and_nodes):
         #need to figure out what this should be
         output=[diagram, prop_and_nodes, self.heuristic(diagram, prop_and_nodes[0])]
