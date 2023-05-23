@@ -198,13 +198,18 @@ class FeynmanGenerator:
                     diagram_to_expand=self.ReadVertices(diagram_to_expand)
                     #this just sets the 0 component of the nodes properly for easy comparison/to get diagram working correctly
                     if diagram_to_expand[new_node][0] not in vs: continue #makes sure new vertex is valid
-
-                    for x in diagram.keys():
+                    recombine=deepcopy(diagram_to_expand)
+                    recombine=self.RecombineExteriors(recombine)
+                    rc_new_external=''
+                    for x in diagram_to_expand.keys():
                         if "out_" in str(x):
-                            if len(diagram[x][1])==1:
-                                new_external.append(diagram[x][1].values())
+                            if len(diagram_to_expand[x][1])==1:
+                                new_external.append(diagram_to_expand[x][1].values())
+                    for x in recombine.keys():
+                        if "out_" in str(x):
+                            if len(recombine[x][1])==1:
+                                rc_new_external.append(recombine[x][1].values())
                     if not self.Same(new_external, external_particles):
-                        #should try recombining exteriors here
                         if second==False:
                             for m in diagram_to_expand.keys():
                                 for n in diagram_to_expand[m][1].keys():
@@ -223,40 +228,70 @@ class FeynmanGenerator:
                                                 diagrams_hash.append(tdss)
                                         else:
                                             continue
+                    if not self.Same(rc_new_external, external_particles):
+                        if second==False:
+                            for m in recombine.keys():
+                                for n in recombine[m][1].keys():
+                                    ds=self.ExpandDiagram(recombine, recombine[m][1][n], m, n, True, external_particles)
+                                    for dss in ds:
+                                        nep=list()
+                                        for node in dss.keys():
+                                            if "out" in str(node):
+                                                nep.append(list(dss[node][1].values())[0])
+                                        if self.Same(nep,external_particles):
+                                            tdss=str([*dss])
+                                            if hash(tdss) in diagrams_hash:
+                                                continue
+                                            else:
+                                                out_diagrams.append(dss)
+                                                diagrams_hash.append(tdss)
+                                        else:
+                                            continue
+                    d=str(diagram_to_expand)
 
-                if hash(d) in diagrams_hash:
-                    continue
-                else:
+                    if hash(d) in diagrams_hash:
+                        continue
+                    else:
 
-                    out_diagrams.append(diagram_to_expand)
-                    diagrams_hash.append(d)
+                        out_diagrams.append(diagram_to_expand)
+                        diagrams_hash.append(d)
+                    d=str(recombine)
+
+                    if hash(d) in diagrams_hash:
+                        continue
+                    else:
+
+                        out_diagrams.append(recombine)
+                        diagrams_hash.append(d)
                 #so now I've added all the diagrams 
                 #now need to put in recombinations
             
-                to_recombine=True
-                dl=[diagram_to_expand]
-                while to_recombine:
-                    dl=[self.RecombineExteriors(dx) for dx in dl]
-                    dl=[x for y in dl for x in y]
-                    if len(dl)==0:
-                        to_recombine=False
-                        break
-                    else:
-                        for dd in dl:
-                            d=str(dd)
-                            new_external=list()
-                            for node in dd:
-                                if "out" in str(node):
-                                    new_external.append(list(dd[node][1].values())[0])
-                            if not self.Same(new_external, external_particles):
-                                continue
-                            if hash(d) in diagrams_hash:
-                                continue
-                            else:
-                                out_diagrams.append(dd)
-                                diagrams_hash.append(d)
-                if len(out_diagrams) == 0: out_diagrams=[diagram]
-                return out_diagrams
+
+            
+                    to_recombine=True
+                    dl=[diagram_to_expand]
+                    while to_recombine:
+                        dl=[self.RecombineExteriors(dx) for dx in dl]
+                        dl=[x for y in dl for x in y]
+                        if len(dl)==0:
+                            to_recombine=False
+                            break
+                        else:
+                            for dd in dl:
+                                d=str(dd)
+                                new_external=list()
+                                for node in dd:
+                                    if "out" in str(node):
+                                        new_external.append(list(dd[node][1].values())[0])
+                                if not self.Same(new_external, external_particles):
+                                    continue
+                                if hash(d) in diagrams_hash:
+                                    continue
+                                else:
+                                    out_diagrams.append(dd)
+                                    diagrams_hash.append(d)
+        if len(out_diagrams) == 0: out_diagrams=[diagram]
+        return out_diagrams
 
 
     def RecombineExteriors(self, diagram):
