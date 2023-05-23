@@ -57,8 +57,8 @@ def LagrangianInput():
     v_1="phi_1, phi_1, phi_1, phi_1"
     cc_1=125
     v_2="phi_1, psi_1, psi_1"
-    cc_2=5
-   # ccs[v_1]=cc_1
+    cc_2=125
+    #ccs[v_1]=cc_1
     ccs[v_2]=cc_2
     particles=dict()
     for i in range(nr):
@@ -107,11 +107,13 @@ diagram=sc.DecidePointFunction()
 print("\n The expansion will happen on the diagrams corresponding to traveling between states: " + diagram[0][0])
 [wilson_answer_diagram, wSA]=sc.PerformSearch("WR")
 willson_couplings=sc.css
+willson_masses=sc.l["particles"]
 wco=sc.cutoff
 sc.l=copy.deepcopy(L_fixed)
 sc.ResetValues()
 [sc_answer_diagram, scSA]=sc.PerformSearch("SC")
 sc_couplings=sc.css
+sc_masses=sc.l["particles"]
 sc_cutoff=sc.cutoff
 print("\n finished running, results have been output to file output.txt")
 outfile=open("output.txt", "w")
@@ -120,12 +122,14 @@ outfile.write("diagram graph: " +str(wilson_answer_diagram))
 outfile.write("\n initial coupling: "+str(ic))
 outfile.write("\n final scattering amplitude: " +str(wSA))
 outfile.write("\n vertex couplings: " +str(willson_couplings))
+outfile.write("\n masses: " +str(willson_masses))
 outfile.write("\n cutoff momenta: "+ str(wco))
 outfile.write("\n \n Synthetic Coupling Renormalization answer \n \n")
 outfile.write("diagram graph: " +str(sc_answer_diagram))
 outfile.write("\n final scattering amplitude: " +str(scSA))
 outfile.write("\n vertex couplings: " +str(sc_couplings))
 outfile.write("\n cutoff momenta: " +str(sc_cutoff))
+outfile.write("\n masses: "+str(sc_masses))
 outfile.close()
 print("\n Bye!")
 

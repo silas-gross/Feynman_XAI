@@ -181,6 +181,8 @@ class FeynmanSearch:
                 for child_a in children:
                     child=generator.GenerateNextOrder(child_a)
                     for c in child:
+                        generator.DrawDiagram(c)
+                        plt.show()
 #                        print("number of vertices: "+ str(generator.CountVertices(c[0])))
                         if c[2] in queue.keys():
                             queue[c[2]].append([c[0], c[1]])
