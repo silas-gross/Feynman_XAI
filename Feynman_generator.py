@@ -168,18 +168,21 @@ class FeynmanGenerator:
                 new_external=list()
                 diagram_to_expand=deepcopy(diagram)
                 connections=diagram_to_expand[from_node][1]
-                del connections[to_node]
+                try:
+                    del diagram_to_expand[from_node][1][to_node]
+                    del diagram_to_expand[to_node][1][from_node]
+                except:
+                    pass
                 new_node=len(diagram_to_expand.keys())+1
                 connections[new_node]=leg
                 diagram_to_expand[from_node][1]=connections
-                diagram_to_expand[new_node]=[v,{to_node:leg, from_node:leg}]
+                diagram_to_expand[new_node]=[v,{from_node:leg}]
                 if from_node in diagram_to_expand[to_node][1].keys(): del diagram_to_expand[to_node][1][from_node]
-#                diagram_to_expand[to_node][1][new_node]=leg
+                diagram_to_expand[to_node][1][new_node]=leg
                 original_particle=0
-                if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): print(diagram_to_expand[new_node][1].values())
                 out_n=0
                 for r in particles_in_vertex:
-                    if original_particle<3 and r==leg:
+                    if original_particle<2 and r==leg:
                         original_particle+=1
                         continue
                     else:
@@ -189,10 +192,14 @@ class FeynmanGenerator:
                         diagram_to_expand[new_node][1][node_name]=r
                         print(diagram_to_expand[new_node][1])
                         diagram_to_expand[node_name]=[0,{new_node: r}]
-                        new_external.append(r)
+                        #new_external.append(r)
                 d=str(diagram_to_expand)
-                if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): print(diagram_to_expand[new_node][1].values())
-                if diagram_to_expand[new_node][0] not in vs: print(diagram_to_expand[new_node][0])
+          #      if len(diagram_to_expand[new_node][1].values()) != len(diagram_to_expand[new_node][0].split(', ')): continue
+                if diagram_to_expand[new_node][0] not in vs: continue
+                for x in diagram.keys():
+                    if "out_" in str(x):
+                        if len(diagram[x][1])==1:
+                            new_external.append(diagram[x][1].values())
                 if not self.Same(new_external, external_particles):
                     if second==False:
                         for m in diagram_to_expand.keys():
