@@ -271,6 +271,8 @@ class FeynmanGenerator:
                                     if agood==False: good=False
                                     #print("failed a vertex "+str(diagram_to_expand[x][0]))
                             if good and self.CountVertices(diagram_to_expand) != 1:
+                                if hash(str(diagram_to_expand)) in diagrams_hash:
+                                    continue
                                 out_diagrams.append(diagram_to_expand)
                                 diagrams_hash.append(hash(str(diagram_to_expand)))
                             
@@ -364,8 +366,7 @@ class FeynmanGenerator:
                     d=str(recombine)
 
                     if hash(d) in diagrams_hash:
-                       pass
-                        # continue
+                       continue
                     else:
                         good=True
                         for rc in recombine:

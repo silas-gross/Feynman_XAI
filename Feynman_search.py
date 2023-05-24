@@ -4,6 +4,8 @@ from Feynman_generator  import FeynmanGenerator
 import math
 import matplotlib.pyplot as plt
 import multiprocessing as mt
+import copy 
+import time 
 
 class PlottingThread(): #a seperate thread to do plotting of the diagrams to not hold up exectution 
     def __init__(self, generator, diagram, name='plt_thread'):
@@ -108,9 +110,11 @@ class FeynmanSearch:
         #get priority queue from Feynman Generator
         #first reset the coupling constants to the original values
         self.ResetValues()
+        t_start=time.time()
         generator=self.diagram_base
         di=self.diagram_to_use
         d=di[1]
+        old_diagr=copy.deepcopy(di)
         kthread=mt.Process(target=PlottingThread, args=(generator, d))
         #generator.DrawDiagram(d)
         #plt.show()
@@ -135,6 +139,11 @@ class FeynmanSearch:
                 htemp=ha
         print("length of queue: "+str(len(queue)))
         while len(queue)>0:
+            if time.time() >= t_start+900:
+                #timeout if we are beyond 30 minues
+                while len(queue[highest_priority])==0:
+                    queue.pop(highest_priority)
+                break
             if len(queue[highest_priority])==0:
                 queue.pop(highest_priority)
                 hs=list(queue.keys())
@@ -149,8 +158,10 @@ class FeynmanSearch:
             kold=cd[0].keys()
             deltasa=[]
             for d1 in diags:
+                if d1==old_diagr:
+                    break
                 if generator.heuristic(d1, "psi_1") < 0.2 * scattering_amp:
-                    delta_sa.append(0)
+                    deltasa.append(0.01)
                 else:
                     p=mt.Process(target=self.Calculate, args=(d1, generator, deltasa))
                     p.start()
@@ -158,7 +169,7 @@ class FeynmanSearch:
                     if p.is_alive():
                         p.kill()
                         p.join()
-                        deltasa.append(0)
+                        deltasa.append(0.01)
                     else:
                         deltasa.append(generator.CalculateScatteringAmplitude(d1))
                 knew=d1.keys()
@@ -187,12 +198,15 @@ class FeynmanSearch:
                 break
             else:
                 children=generator.ExpandDiagram(cd[0], *cd[1])
+                d=cd[0]
+                old_diags=copy.deepcopy(d)
                 for child_a in children:
                     child=generator.GenerateNextOrder(child_a)
                     for c in child:
                         #generator.DrawDiagram(c)
                         #plt.show()
                         print("Childer have this number of vertices: "+ str(generator.CountVertices(c[0])))
+                        if hash(str(c)) in generator.diagram_list: continue
                         if generator.CountVertices(c[0]) == 1: continue
                         if c[2] in queue.keys():
                             queue[c[2]].append([c[0], c[1]])
