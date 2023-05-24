@@ -124,7 +124,7 @@ with further constraint that the coupling constant must be always positive.
 The idea is that the renormalization will be run over all diagrams until the maximal change in the scattering amplitude is reached and the renormalization has reached the fixed point. 
 Then, the two approaches will be compared using 
 \begin{equation}
-	\lambda_{RC} \frac{SA_{RC}}{\Lambda_{RC}} = \lambda_W SA_{W} \log( \Lambda_W)
+	\lambda_{RC} \frac{SA_{RC}}{\Lambda_{RC}} = \lambda_W \frac{SA_{W}}{ \Lambda_W}
 	\end{equation}
 	where $\Lambda_W$ is still the initial value which corresponds to a very energetic system, $p^2 +m^2 = 16 m^2$ so the internal particles may go up to very high energies, thus probing the smallest scale then coarse graining out to larger scales as was done in \cite{Beny2013} and \cite{Mehta2014}.
 For this system the base diagram being expanded is
@@ -173,11 +173,54 @@ The simplicity of this model allows for calculation by hand of the first loop or
 Evaluating this integral gives 
 \begin{equation}
 	\begin{split}
-		\frac{\pi^2}{4(m_\psi^2 - m_\phi^2)^2(m_\psi^2 + \Lambda^2)} & \left[ (m_\psi^2 + \Lambda^2) \left( 2 m_\phi^3 \tan^{-1} \left( \frac{\Lambda}{m_\phi} \right) \right. \right. \\
+		\frac{\pi^2}{(m_\psi^2 - m_\phi^2)^2(m_\psi^2 + \Lambda^2)} & \left[ (m_\psi^2 + \Lambda^2) \left( 2 m_\phi^3 \tan^{-1} \left( \frac{\Lambda}{m_\phi} \right) \right. \right. \\
 		& \left. \left. + m_\psi (m_\psi^2 - 3 m_\phi^2 ) \tan^{-1} \left( \frac{\Lambda}{m_\psi} \right) \right) + m_\psi^2 \Lambda \left( m_\phi^2 - m_\psi^2 \right) \right] 
 	\end{split}
 \end{equation}
-The output of running gives a number on this order (off by approximately $5\%$ a correction which is 
+However, there is an additional second loop which coresponds to what was actually seen in running, see figure \ref{fig:run_results}.
+\begin{figure}[h!]
+	\begin{center}
+		\includegraphics[scale=0.25]{Willson_final}
+		\includegraphics[scale=0.25]{SC}
+		\begin{tikzpicture}
+			\begin{feynman}
+				\vertex (i1) at (0,2); 
+				\vertex (i2) at (0,0); 
+				\vertex (a) at (1,1);
+				\vertex (b) at (2,1);
+				\vertex (c) at (3,1);
+				\vertex (d) at (4,1);
+				\diagram{
+					(a)--[scalar, momentum=\( \phi \)](i2);
+					(a)--[scalar, momentum=\( \psi \)](i1);
+					(a)--[scalar, momentum=\( \psi^* \)](b);
+					(b)--[scalar, half left, momentum=\( \psi \)] (c);
+					(b)--[scalar, half right, momentum=\( \phi \)] (c);
+					(c)--[scalar, momentum=\( \psi^* \)](d);
+				};
+			\end{feynman}
+		\end{tikzpicture}
+		\caption{The final diagram from running $A^*$ search, top: Willson renormalization, center: Synthetic Coupling, bottom: corresponding corrected feynman diagram. The bad vertices come down to issues with node naming in the graph drawer}
+		\label{fig:run_results}
+	\end{center}
+\end{figure}
+	This diagram is fundamentally the same as eq \ref{eq:corr} however, $p=0$ and $k=-q$ from changes to the $\delta$ functions, thus the amplitude of this correction gives 
+		\begin{equation}
+			\frac{\pi^2 }{m_\psi^2} \frac{m_\psi^2 \log \left( \frac{\Lambda^2}{m^2_\psi} + 1 \right) +m_\phi^2 \log \left( \frac{\Lambda^2}{m^2_\phi} + 1 \right) }{m_\psi^2 - m_\phi^2} \approx 
+		\end{equation}
+		which is within $2\%$ of the values observed, which were 
+		\begin{equation}
+			\begin{array}{ccc}
+				\lambda_{SC} = 10^3 & \hspace{0.5 cm} & \lambda_W = 0.98 \\
+				\Lambda_{SC} = 6.37 & \hspace{0.5 cm} & \Lambda_W = 6.37 \times 10^5 \\
+				SA_{SC} = -0.97 & \hspace{0.5 cm} & SA_W = 10^8 \\
+			\end{array}
+		\end{equation}
+		This means that the evaluation has a descrepancy of 
+		\begin{equation}
+			\frac{\textrm{SC}}{\textrm{Willson}} = \frac{152.7}{153.8} = 0.715 \%
+		\end{equation}
+
 %This needs to have the stuff added to it, actually have results to add to this section finally. 
 \newpage
 \section{Further Work}
