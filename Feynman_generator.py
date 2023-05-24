@@ -9,7 +9,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import sys
 import builtins
-
+import multiprocessing as mp
 class FeynmanGenerator:
     def __init__(self, lagrangian, cutoff, looporder=1):
         #by default, evaluate the diagrams to loop order 1 
@@ -133,11 +133,13 @@ class FeynmanGenerator:
             n=prop_and_nodes[i][1]
             m=prop_and_nodes[i][2]
     #        print(diagram)
-            child_diagrams=self.ExpandDiagram(diagram, leg, n, m) 
+            child_diagrams=self.ExpandDiagram(diagram, leg, n, m, False) 
             try:        #not sure why but this keeps giving an Nonetype object
      #           print(type(child_diagrams))
                 if len(child_diagrams) == 0:
                     continue
+                if len(child_diagrams)==1 and hash(str(child_diagrams[0]))==hash(str(diagram)):
+                    children=[[diagram, prop_and_nodes[i], 0]]
                 for c in child_diagrams:
                     children.append(self.GenerateOutput(c, prop_and_nodes[i]))
             except:
@@ -189,7 +191,7 @@ class FeynmanGenerator:
                 else:
                     continue
                     #if the two nodes are not connected, the expansion does not make sense
-                new_node=len(diagram_to_expand.keys())+1-n_out
+                new_node=len(diagram_to_expand.keys())+1
                 #create a new node that will be connected to the "from" node by the original particle
                 connections[new_node]=leg
                 diagram_to_expand[new_node]=[0, dict()]
@@ -204,7 +206,7 @@ class FeynmanGenerator:
                     except:
                         diagram_to_expand[new_node]=['', {from_node:leg, to_node:p}]
                         diagram_to_expand[to_node]=['', {new_node:p}]
-                    print(diagram_to_expand[new_node])
+                    #print(diagram_to_expand[new_node])
                     new_particles=deepcopy(remaining_particles)
                     new_particles.remove(p)
                     for p1 in new_particles:
@@ -216,35 +218,70 @@ class FeynmanGenerator:
                     diagram_to_expand=self.ReadVertices(diagram_to_expand)
                     #this just sets the 0 component of the nodes properly for easy comparison/to get diagram working correctly
                     if diagram_to_expand[new_node][0] not in vs: 
-                        print("bad vertex " +str(diagram_to_expand[new_node][0]))
+                        #print("bad vertex " +str(diagram_to_expand[new_node][0]))
                         particles=diagram_to_expand[new_node][0].split(' ')
                         if self.VT(particles) != self.VT(particles_in_vertex):
                             continue #makes sure new vertex is valid
                         else:
-                            print("had weird ordering")
+                            print("had weird ordering "+str(v))
                             diagram_to_expand[new_node][0]=v
                     recombine=deepcopy(diagram_to_expand)
                     recombine=self.RecombineExteriors(recombine)
                     rc_new_external=list()
                     for x in diagram_to_expand.keys():
-                        if "out_" in str(x):
-                            if len(diagram_to_expand[x][1])==1:
-                                new_external.append(diagram_to_expand[x][1].values())
-                    print("new externals: "+str(new_external))
+                        if len(diagram_to_expand[x][1])==1:
+                           for y in diagram_to_expand[x][1].keys():new_external.append(diagram_to_expand[x][1][y])
+                    #print("new externals: "+str(new_external))
                     if len(recombine)==0: recombine=[deepcopy(diagram_to_expand)]
                     for x in recombine[0].keys():
-                        if "out_" in str(x):
-                            if len(recombine[0][x][1])==1:
-                                rc_new_external.append(recombine[0][x][1].values())
-                    if self.Same(rc_new_external, external_particles) or self.Same(new_external, external_particles): print("found a good val")
-                    if not self.Same(new_external, external_particles):
+                        if len(recombine[0][x][1])==1:
+                           for y in diagram_to_expand[x][1].keys():new_external.append(diagram_to_expand[x][1][y])
+                    #if self.Same(rc_new_external, external_particles) or self.Same(new_external, external_particles): print("found a good val "+str(diagram_to_expand) +"\n \n"+ str(recombine[0]))
+                    #else: print(str(rc_new_external)+" new "+str(new_external)+" original "+str(external_particles))
+                    if self.Same(new_external, external_particles):
+                        if hash(str(diagram_to_expand)) in diagrams_hash:
+                            continue
+                        else:
+                            good=True
+                            for x in diagram_to_expand.keys():
+                                agood=False
+                                if diagram_to_expand[x][0] not in vs:
+                                    if "out" in str(x): continue
+                                    for v in vs:
+                                        if self.VT(diagram_to_expand[x][0].split(' ')) == self.VT(v.split(', ')):
+                                            diagram_to_expand[x][0]=v
+                                            #print(diagram_to_expand[x][0])
+                                            agood=True
+                                    if agood==False: 
+                                        good=False
+                                        #print("failed a vertex "+str(diagram_to_expand[x][0]))
+                            if good and self.CountVertices(diagram_to_expand) != 1:
+                                out_diagrams.append(diagram_to_expand)
+                                diagrams_hash.append(hash(str(diagram_to_expand)))
+
+                    if not self.Same(new_external, external_particles) or second==False:
+                        if second==True:
+                            for x in diagram_to_expand.keys():
+                                if diagram_to_expand[x][0] not in vs:
+                                    if len(diagram_to_expand[x][1].keys()) == 1 or "out" in str(x): continue
+                                    if self.VT(diagram_to_expand[x][0].split(' ')) == self.VT(v.split(', ')):
+                                            diagram_to_expand[x][0]=v
+                                            #print("Found a faulty diagram ordering for vertex " +str(v))
+                                            agood=True
+                                    if agood==False: good=False
+                                    #print("failed a vertex "+str(diagram_to_expand[x][0]))
+                            if good and self.CountVertices(diagram_to_expand) != 1:
+                                out_diagrams.append(diagram_to_expand)
+                                diagrams_hash.append(hash(str(diagram_to_expand)))
+                            
                         if second==False:
                             for m in diagram_to_expand.keys():
                                 for n in diagram_to_expand[m][1].keys():
-                                    ds=self.ExpandDiagram(diagram_to_expand, diagram_to_expand[m][1][n], m, n, True, external_particles)
+                                    ds=self.ExpandDiagram(diagram_to_expand, diagram_to_expand[m][1][n], m, n,True)
+                                    #print(len(ds))
                                     for dss in ds:
                                         nep=list() 
-                                        print("2nd order expanded " +str(dss))
+                                        #print("2nd order expanded " +str(dss))
                                         for node in dss.keys():
                                             if "out" in str(node):
                                                 nep.append(list(dss[node][1].values())[0])
@@ -256,17 +293,23 @@ class FeynmanGenerator:
                                                 good=True
                                                 for x in dss.keys():
                                                     if dss[x][0] not in vs:
+                                                        if len(dss[x][1].keys()) ==1 or "out" in str(x): continue
+                                                        if self.VT(dss[x][0].split(' ')) == self.VT(v.split(', ')):
+                                                                dss[x][0]=v
+                                                                #print("Found a faulty diagram ordering for vertex " +str(v))
+                                                                agood=True
+                                                        if agood==False: good=False
                                                         good=False
-                                                if good:
+                                                if good and self.CountVertices(dss) != 1:
                                                     out_diagrams.append(dss)
                                                     diagrams_hash.append(tdss)
                                         else:
                                             continue
                     if not self.Same(rc_new_external, external_particles):
-                        if second==False:
+                        if second==False and self.CountVertices(recombine[0]) != 1:
                             for m in recombine[0].keys():
                                 for n in recombine[0][m][1].keys():
-                                    ds=self.ExpandDiagram(recombine[0], recombine[0][m][1][n], m, n, True, external_particles)
+                                    ds=self.ExpandDiagram(recombine[0], recombine[0][m][1][n], m, n, True)
                                     for dss in ds:
                                         nep=list()
                                         for node in dss.keys():
@@ -280,13 +323,32 @@ class FeynmanGenerator:
                                                 good=True
                                                 for x in dss.keys():
                                                     if dss[x][0] not in vs:
+                                                        if len(dss[x][1].keys()) ==1 or "out" in str(x): continue
                                                         good=False
-                                                if good:
+                                                if good and self.CountVertices(dss) != 1:
                                                     out_diagrams.append(dss)
                                                     diagrams_hash.append(tdss)
                                         else:
                                             continue
                     d=str(diagram_to_expand)
+                    if self.CountVertices(recombine[0]) != 1:
+                        #print(recombine[0])
+                        if hash(str(recombine[0])) in diagrams_hash:
+                            continue
+                        else:
+                            good=True
+                            for x in recombine[0].keys():
+                                if recombine[0][x][0] not in vs:
+                                    if len(recombine[0][x][1].keys()) ==1 or "out" in str(x): continue
+                                    if self.VT(recombine[0][x][0].split(' ')) == self.VT(v.split(', ')):
+                                            recombine[0][x][0]=v
+                                            agood=True
+                                    if agood==False: good=False
+                            if good:
+                                for r in recombine:
+                                    out_diagrams.append(r)
+                                    diagrams_hash.append(hash(str(r)))
+
 
                     if hash(d) in diagrams_hash:
                         continue
@@ -294,23 +356,26 @@ class FeynmanGenerator:
                         good=True
                         for x in diagram_to_expand.keys():
                             if diagram_to_expand[x][0] not in vs:
+                                if len(diagram_to_expand[x][1].keys()) ==1 or "out" in str(x): continue
                                 good=False
-                        if good:
+                        if good and self.CountVertices(diagram_to_expand) != 1:
                             out_diagrams.append(diagram_to_expand)
                             diagrams_hash.append(d)
                     d=str(recombine)
 
                     if hash(d) in diagrams_hash:
-                        continue
+                       pass
+                        # continue
                     else:
                         good=True
                         for rc in recombine:
                             for x in rc.keys():
                                 if rc[x][0] not in vs:
+                                    if "out" in str(x) ==1: continue
                                     good=False
-                            if good:
+                            if good and self.CountVertices(rc) != 1:
                                 out_diagrams.append(rc)
-                                diagrams_hash.append(d)
+                                diagrams_hash.append(str(rc))
                     #so now I've added all the diagrams 
                 #now need to put in recombinations
             
@@ -337,14 +402,14 @@ class FeynmanGenerator:
                                     continue
                                 else:
                                     good=True
-                                    for x in diagram_to_expand.keys():
-                                        if diagram_to_expand[x][0] not in vs:
+                                    for x in dd.keys():
+                                        if dd[x][0] not in vs:
                                             good=False
-                                    if good:
+                                    if good and self.CountVertices(dd) != 1:
                                         out_diagrams.append(dd)
                                         diagrams_hash.append(d)
         if len(out_diagrams) == 0: out_diagrams=[diagram]
-        print(len(out_diagrams))
+        #print(len(out_diagrams))
         for odo in out_diagrams:
             if type(odo) is list:
                 out_diagrams.remove(odo)
@@ -352,6 +417,19 @@ class FeynmanGenerator:
                     out_diagrams.append(o)
             else:
                 continue
+        for o in out_diagrams:
+            for k in o.keys():
+                try:
+                    if "out" in str(k):
+                        continue
+                    else:
+                        vs[o[k][0]]
+                except:
+                    try:
+                        out_diagrams.remove(o)
+                    except:
+                        pass
+                    
         #print(type(out_diagrams[0]))
         return out_diagrams
 
@@ -363,7 +441,7 @@ class FeynmanGenerator:
         #selection is done at vertex level, performed in Feynman_search
         k=[]
         for x in diagram.keys():
-            if "out" in str(x):
+            if len(diagram[x][1].keys())==1:
                 k.append(x)
         diagrams_out=list()
         dummy_diagram=deepcopy(diagram)
@@ -736,12 +814,27 @@ class FeynmanGenerator:
                 if total_vertexs !=0:
                     avg_constant=float(avg_constant)/total_vertexs
                     in_out_new_contribution=in_out_new_contribution/total_vertexs
-                SA=self.CalculateScatteringAmplitude(diagram)
+                SA=1
+#                self.CalculateScatteringAmplitude(diagram)
+                try:
+                    p=mp.Process(target=self.CalculateScatteringAmplitude, args=(diagram,))
+                    p.start() 
+                    p.join(60) #give it sminuet to attempt to clacluate
+                    if p.is_alive():
+                        SA=1
+                        p.kill()
+                        p.join()
+                    else:
+                        SA=self.CalculateScatteringAmplitude(diagram)
+                except:
+                    print(diagram)
                 m=self.propagators[propagator] #mass of the propagator
                 starting_coupling_constant=1
                 for node in diagram.keys():
-                    if diagram[node][0] != 0:
+                    if diagram[node][0] != 0 and diagram[node][0] in vertexs.keys():
                         starting_coupling_constant=starting_coupling_constant*vertexs[diagram[node][0]]
+                    else:
+                        starting_coupling_constant=0
         #so I need count vertices to return a list of the form 
         #(count of vertexs, product of coupling constants, list of vertexs)        
                 h=1/SA*(float(starting_coupling_constant)*avg_constant)/pow(m,2)

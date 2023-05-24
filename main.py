@@ -3,7 +3,7 @@ import tk as tk
 from Feynman_search import FeynmanSearch
 import time 
 import copy
-import threading
+import multiprocessing as mp
 
 #top=tk.Tk()
 def SubmitLagrangian():
@@ -57,9 +57,12 @@ def LagrangianInput():
     v_1="phi_1, phi_1, phi_1, phi_1"
     cc_1=125
     v_2="phi_1, psi_1, psi_1"
-    cc_2=125
+    cc_2=1000
+    v_3="phi_1, phi_1, psi_1"
+    cc_3=12
     #ccs[v_1]=cc_1
     ccs[v_2]=cc_2
+    #ccs[v_3]=cc_3
     particles=dict()
     for i in range(nr):
         pname="phi_"+str(i+1)

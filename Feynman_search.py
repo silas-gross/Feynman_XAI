@@ -3,11 +3,10 @@
 from Feynman_generator  import FeynmanGenerator
 import math
 import matplotlib.pyplot as plt
-import threading as th
+import multiprocessing as mt
 
-class PlottingThread(th.Thread): #a seperate thread to do plotting of the diagrams to not hold up exectution 
+class PlottingThread(): #a seperate thread to do plotting of the diagrams to not hold up exectution 
     def __init__(self, generator, diagram, name='plt_thread'):
-        th.Thread.__init__(self)
         self.diagram=diagram
         self.gen=generator
 #        super(PlottingThread, self).__init__(name=name)
@@ -102,6 +101,8 @@ class FeynmanSearch:
                 else:
                     self.ccs[v]=c
             return True
+    def Calculate(self, diagram, generator, scattering_amplitude):
+        scattering_amplitude.append(generator.CalculateScatteringAmplitude(diagram))
 
     def PerformSearch(self, method):
         #get priority queue from Feynman Generator
@@ -110,11 +111,10 @@ class FeynmanSearch:
         generator=self.diagram_base
         di=self.diagram_to_use
         d=di[1]
-        kthread=PlottingThread(generator, d)
+        kthread=mt.Process(target=PlottingThread, args=(generator, d))
         #generator.DrawDiagram(d)
         #plt.show()
-#        kthread.start()
-#        kthread.run()
+        kthread.start()
         children=generator.GenerateNextOrder(d)
 #        print(children)
         queue=dict()
@@ -124,7 +124,7 @@ class FeynmanSearch:
                 queue[c[2]].append([c[0], c[1]])
             else:
                 queue[c[2]]=[[c[0], c[1]]]
-        print(queue.keys())
+        #print(queue.keys())
         hs=list(queue.keys())
         htemp=None
         highest_priority=0
@@ -149,9 +149,18 @@ class FeynmanSearch:
             kold=cd[0].keys()
             deltasa=[]
             for d1 in diags:
-#                print("number of veriticies: "+ str(generator.CountVertices(d1)))
-                deltasa.append(generator.CalculateScatteringAmplitude(d1))
-                #print("diagram change is ", deltasa[-1])
+                if generator.heuristic(d1, "psi_1") < 0.2 * scattering_amp:
+                    delta_sa.append(0)
+                else:
+                    p=mt.Process(target=self.Calculate, args=(d1, generator, deltasa))
+                    p.start()
+                    p.join(30) #wait one minuuee to attempt calculation of scattering amplitude
+                    if p.is_alive():
+                        p.kill()
+                        p.join()
+                        deltasa.append(0)
+                    else:
+                        deltasa.append(generator.CalculateScatteringAmplitude(d1))
                 knew=d1.keys()
                 #print(knew)
                 for k in knew:
@@ -169,9 +178,9 @@ class FeynmanSearch:
             sa=sum(deltasa)
             scattering_amp+=sa
  #           print(highest_priority)
-            if sa<abs(highest_priority):
-                #kthread.UpdateDiagram(cd[0])
-                #kthread.join()
+            if abs(sa)<0.9*abs(highest_priority):
+                kthread.UpdateDiagram(cd[0])
+                kthread.join()
                 generator.DrawDiagram(cd[0])
                 plt.show()
                 return [cd[0], scattering_amp]
@@ -181,9 +190,10 @@ class FeynmanSearch:
                 for child_a in children:
                     child=generator.GenerateNextOrder(child_a)
                     for c in child:
-                        generator.DrawDiagram(c)
-                        plt.show()
-#                        print("number of vertices: "+ str(generator.CountVertices(c[0])))
+                        #generator.DrawDiagram(c)
+                        #plt.show()
+                        print("Childer have this number of vertices: "+ str(generator.CountVertices(c[0])))
+                        if generator.CountVertices(c[0]) == 1: continue
                         if c[2] in queue.keys():
                             queue[c[2]].append([c[0], c[1]])
                         else:
